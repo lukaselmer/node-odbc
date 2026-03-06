@@ -1,6 +1,6 @@
 declare namespace odbc {
 
-  class ColumnDefinition {
+  interface ColumnDefinition {
     name: string;
     dataType: number;
     dataTypeName: string;
@@ -9,7 +9,7 @@ declare namespace odbc {
     nullable: boolean;
   }
 
-  class Result<T> extends Array<T> {
+  interface Result<T> extends Array<T> {
     count: number;
     columns: Array<ColumnDefinition>;
     statement: string;
@@ -17,17 +17,17 @@ declare namespace odbc {
     return: number;
   }
 
-  class OdbcError {
+  interface OdbcError {
     message: string;
     code: number;
     state: string;
   }
 
-  class NodeOdbcError extends Error {
+  interface NodeOdbcError extends Error {
     odbcErrors: Array<OdbcError>;
   }
 
-  class Statement {
+  interface Statement {
 
     ////////////////////////////////////////////////////////////////////////////
     //   Callbacks   ///////////////////////////////////////////////////////////
@@ -81,7 +81,7 @@ declare namespace odbc {
     cursor: boolean|string
   }
 
-  class Connection {
+  interface Connection {
 
     ////////////////////////////////////////////////////////////////////////////
     //   Callbacks   ///////////////////////////////////////////////////////////
@@ -145,7 +145,7 @@ declare namespace odbc {
     close(): Promise<void>;
   }
 
-  class Pool {
+  interface Pool {
 
     ////////////////////////////////////////////////////////////////////////////
     //   Callbacks   ///////////////////////////////////////////////////////////
@@ -173,7 +173,7 @@ declare namespace odbc {
     close(): Promise<void>;
   }
 
-  class Cursor {
+  interface Cursor {
     noData: boolean
 
     ////////////////////////////////////////////////////////////////////////////
