@@ -1,6 +1,11 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [2.5.0] - 2026-03-06
+### Changed
+- Forked from `odbc` and published as `@lukaselmer/odbc` to include merged but unreleased changes
+- Updated binary hosting to `lukaselmer/node-odbc` GitHub Releases
+
 ## [2.4.7] - 2023-01-26
 ### Fixed
 - Fixed static cursor declaration causeing performance degredatio

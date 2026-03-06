@@ -93,6 +93,7 @@ jobs:
       with:
         node-version: '24'
         registry-url: 'https://registry.npmjs.org'
-    - run: npm publish --tag $PACKAGE_TAG
+    - run: npm publish --access public --tag $PACKAGE_TAG
       env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         PACKAGE_TAG: ${{ steps.package-tag.outputs.tag }}
