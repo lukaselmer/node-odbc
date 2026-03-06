@@ -93,15 +93,12 @@ describe('.beginTransaction([callback])...', () => {
     it('...should make transactional queries visible only to the connection that the transaction was started on until commit() is called (at transactional isolation level \'read committed\').', (done) => {
       let connectionString1Keywords = '';
       let connectionString2Keywords = '';
-      if (global.dbms === 'ibmi')
-      {
+      if (global.dbms === 'ibmi') {
         // set commitment level to 1 (Read committed)
         connectionString1Keywords= ';CMT=1';
         // set commitment level to 1 (Read committed)
         connectionString2Keywords = ';CMT=1;CONCURRENTACCESSRESOLUTION=1';
-      }
-      else if (global.dbms === 'mssql')
-      {
+      } else if (global.dbms === 'mssql') {
         connectionString2Keywords = ';DMConnAttr=[1227]=32';
       }
       odbc.connect(`${process.env.CONNECTION_STRING}${connectionString1Keywords}`, (error1, connection1) => {
@@ -223,13 +220,10 @@ describe('.beginTransaction([callback])...', () => {
     it('...should make transactional queries visible only to the connection that the transaction was started on until commit() is called (at transactional isolation level \'read committed\').', async () => {
       let connection1 = null;
       let connection2 = null;
-      if (global.dbms === 'ibmi')
-      {
+      if (global.dbms === 'ibmi') {
         connection1 = await odbc.connect(`${process.env.CONNECTION_STRING};CMT=1`);
         connection2 = await odbc.connect(`${process.env.CONNECTION_STRING};CMT=1;CONCURRENTACCESSRESOLUTION=1`);
-      }
-      else if (global.dbms === 'mssql')
-      {
+      } else if (global.dbms === 'mssql') {
         connection1 = await odbc.connect(`${process.env.CONNECTION_STRING}`);
         connection2 = await odbc.connect(`${process.env.CONNECTION_STRING};DMConnAttr=[1227]=32`);
       }

@@ -65,10 +65,7 @@ describe('.prepare(sql, [calback])...', () => {
     });
     it('...should return an error with an invalid SQL string', function(done) {
       // SQL Server doesn't check for syntax error when the application calls SQLPrepare
-      if (global.dbms === 'mssql')
-      {
-        return this.skip();
-      }
+      if (global.dbms === 'mssql') return this.skip();
       odbc.connect(`${process.env.CONNECTION_STRING}`, (error, connection) => {
         assert.deepEqual(error, null);
         connection.createStatement((error1, statement) => {
@@ -87,10 +84,7 @@ describe('.prepare(sql, [calback])...', () => {
     });
     it('...should return an error with a blank SQL string', function (done) {
       // SQL Server doesn't check for syntax error when the application calls SQLPrepare
-      if (global.dbms === 'mssql')
-      {
-        return this.skip();
-      }
+      if (global.dbms === 'mssql') return this.skip();
       odbc.connect(`${process.env.CONNECTION_STRING}`, (error, connection) => {
         assert.deepEqual(error, null);
         connection.createStatement((error1, statement) => {
@@ -119,10 +113,7 @@ describe('.prepare(sql, [calback])...', () => {
     });
     it('...should return an error with an invalid SQL string', async function() {
       // SQL Server doesn't check for syntax error when the application calls SQLPrepare
-      if (global.dbms === 'mssql')
-      {
-        return this.skip();
-      }
+      if (global.dbms === 'mssql') return this.skip();
       assert.rejects(async () => {
         const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`);
         const statement = await connection.createStatement();
@@ -132,10 +123,7 @@ describe('.prepare(sql, [calback])...', () => {
     });
     it('...should return an error with a blank SQL string', async function() {
       // SQL Server doesn't check for syntax error when the application calls SQLPrepare
-      if (global.dbms === 'mssql')
-      {
-        return this.skip();
-      }
+      if (global.dbms === 'mssql') return this.skip();
       assert.rejects(async () => {
         const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`);
         const statement = await connection.createStatement();
