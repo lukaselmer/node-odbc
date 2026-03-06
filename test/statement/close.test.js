@@ -124,10 +124,7 @@ describe('.close([calback])...', () => {
     });
     it('...should close after calling prepare with an error (bad sql prepared).', function(done) {
       // SQL Server doesn't check for syntax error when the application calls SQLPrepare
-      if (global.dbms === 'mssql')
-      {
-        return this.skip();
-      }
+      if (global.dbms === 'mssql') return this.skip();
       connection.createStatement((error1, statement) => {
         assert.deepEqual(error1, null);
         assert.notDeepEqual(statement, null);
@@ -248,10 +245,7 @@ describe('.close([calback])...', () => {
     });
     it('...should close after calling prepare with an error (bad sql prepared).', async function() {
       // SQL Server doesn't check for syntax error when the application calls SQLPrepare
-      if (global.dbms === 'mssql')
-      {
-        return this.skip();
-      }
+      if (global.dbms === 'mssql') return this.skip();
       const statement = await connection.createStatement();
       assert.notDeepEqual(statement, null);
       await assert.rejects(async () => {
