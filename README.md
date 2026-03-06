@@ -31,7 +31,6 @@ Currently supported versions include:
 
 * Node.js 24
 * Node.js 22
-* Node.js 20
 
 ---
 
