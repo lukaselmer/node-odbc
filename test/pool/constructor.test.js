@@ -13,8 +13,10 @@ describe('odbc.pool...', () => {
         assert.notDeepEqual(pool, null);
         setTimeout(() => {
           assert.deepEqual(pool.freeConnections.length, 10);
-          pool.close();
-          done();
+          pool.close((closeError) => {
+            assert.deepEqual(closeError, null);
+            done();
+          });
         }, 20000);
       });
     });
@@ -28,8 +30,10 @@ describe('odbc.pool...', () => {
         assert.notDeepEqual(pool, null);
         setTimeout(() => {
           assert.deepEqual(pool.freeConnections.length, 5);
-          pool.close();
-          done();
+          pool.close((closeError) => {
+            assert.deepEqual(closeError, null);
+            done();
+          });
         }, 3000);
       });
     });
@@ -39,7 +43,10 @@ describe('odbc.pool...', () => {
         pool.connect((error2, connection) => {
           assert.deepEqual(error2, null);
           assert.deepEqual(connection instanceof Connection, true);
-          done();
+          pool.close((closeError) => {
+            assert.deepEqual(closeError, null);
+            done();
+          });
         });
       });
     });
@@ -50,7 +57,7 @@ describe('odbc.pool...', () => {
       assert.notDeepEqual(pool, null);
       await delay(8000);
       assert.deepEqual(pool.freeConnections.length, 10);
-      pool.close();
+      await pool.close();
     });
     it('...should open as many connections as passed with `initialSize` key...', async () => {
       const poolConfig = {
@@ -61,13 +68,13 @@ describe('odbc.pool...', () => {
       assert.notDeepEqual(pool, null);
       await delay(5000);
       assert.deepEqual(pool.freeConnections.length, 5);
-      pool.close();
+      await pool.close();
     });
     it('...should have at least one free connection when .connect is called', async () => {
       const pool = await odbc.pool(`${process.env.CONNECTION_STRING}`);
       const connection = await pool.connect();
       assert.deepEqual(connection instanceof Connection, true);
-      pool.close();
+      await pool.close();
     });
   }); // ...with promises...
 });
