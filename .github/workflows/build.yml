@@ -10,7 +10,7 @@ jobs:
           - 22.x
         os:
           - windows-latest
-          - ubuntu-24.04
+          - ubuntu-latest
           - macos-latest
     runs-on: ${{ matrix.os }}
     steps:
@@ -19,8 +19,11 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
-    - name: Install dependencies
+    - name: Install dependencies (macOS)
       if: ${{ startsWith(matrix.os, 'macos') }}
       run: brew install unixodbc
+    - name: Install dependencies (Linux)
+      if: ${{ startsWith(matrix.os, 'ubuntu') }}
+      run: sudo apt-get update && sudo apt-get install -y unixodbc-dev
     - name: Build package
       run: npm ci --production --build-from-source
