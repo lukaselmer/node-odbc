@@ -24,7 +24,7 @@ before(async () => {
   } else {
     throw new Error(`Please set the DBMS environment variable to your target DBMS when calling the test suite:
 
-    DBMS=____ npm test`)
+    ${DBMS_LIST.map((dbms) => `DBMS=${dbms} npm test`).join('\n    ')}`)
   }
 })
 
@@ -37,7 +37,7 @@ describe('odbc', () => {
         `${process.env.DB_SCHEMA}.${process.env.DB_TABLE}`,
         '(ID INTEGER, NAME VARCHAR(24), AGE INTEGER)'
       )
-      for (queryString of queries) {
+      for (const queryString of queries) {
         await connection.query(queryString)
       }
     } catch (error) {
@@ -45,7 +45,7 @@ describe('odbc', () => {
         throw error
       }
     } finally {
-      await connection.close()
+      await connection?.close()
     }
   })
 
