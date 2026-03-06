@@ -1,11 +1,8 @@
 const odbc = require('../../../lib/odbc')
 
 module.exports = {
-  generateCreateOrReplaceQueries: function (tableName, fields) {
-    const sqlQueries = []
-    sqlQueries.push(`DROP TABLE IF EXISTS ${tableName}`)
-    sqlQueries.push(`CREATE TABLE ${tableName} ${fields}`)
-    return sqlQueries
+  generateCreateOrReplaceQueries: function (/** @type {string} */ tableName, /** @type {string} */ fields) {
+    return [`DROP TABLE IF EXISTS ${tableName}`, `CREATE TABLE ${tableName} ${fields}`]
   },
   sqlColumnsColumns: [
     {
