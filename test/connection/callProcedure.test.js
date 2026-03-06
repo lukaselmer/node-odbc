@@ -80,7 +80,8 @@ if (dbms) {
 
 describe('.callProcedure(procedureName, parameters, [callback])...', () => {
   describe('...with callbacks...', () => {
-    it('...should place correct result in an out parameter.', (done) => {
+    it('...should place correct result in an out parameter.', function(done) {
+      if (!process.env.DB_STOREDPROCEDURE) return this.skip();
       const array = [undefined];
       odbc.connect(`${process.env.CONNECTION_STRING}`, (error1, connection) => {
         assert.deepEqual(error1, null);
@@ -91,7 +92,8 @@ describe('.callProcedure(procedureName, parameters, [callback])...', () => {
         });
       });
     });
-    it('...should place correct result in an multiple out parameters.', (done) => {
+    it('...should place correct result in an multiple out parameters.', function(done) {
+      if (!process.env.DB_STOREDPROCEDURE2) return this.skip();
       const array = [undefined, undefined];
       odbc.connect(`${process.env.CONNECTION_STRING}`, (error1, connection) => {
         assert.deepEqual(error1, null);

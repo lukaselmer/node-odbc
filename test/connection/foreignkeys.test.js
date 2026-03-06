@@ -1,18 +1,33 @@
 /* eslint-env node, mocha */
 const assert = require('assert');
 const odbc   = require('../../lib/odbc');
+const { colName, tableName } = require('../helpers');
 
 describe('.foreignKeys(catalog, schema, table, fkCatalog, fkSchema, fkTable, callback)...', () => {
   before(async () => {
     let connection;
     try {
       connection = await odbc.connect(`${process.env.CONNECTION_STRING}`);
-      const query1 = `CREATE OR REPLACE TABLE ${process.env.DB_SCHEMA}.PKTABLE (ID INTEGER, NAME VARCHAR(24), AGE INTEGER, PRIMARY KEY(ID))`;
-      const query2 = `CREATE OR REPLACE TABLE ${process.env.DB_SCHEMA}.FKTABLE (PKID INTEGER, NAME VARCHAR(24), FOREIGN KEY(PKID) REFERENCES PKTABLE(ID))`;
-      await connection.query(query1);
-      await connection.query(query2);
+      if (global.dbmsConfig && global.dbmsConfig.generateCreateOrReplaceQueries) {
+        const queries1 = global.dbmsConfig.generateCreateOrReplaceQueries(
+          `${process.env.DB_SCHEMA}.PKTABLE`,
+          '(ID INTEGER, NAME VARCHAR(24), AGE INTEGER, PRIMARY KEY(ID))'
+        );
+        for (const q of queries1) { await connection.query(q); }
+        const queries2 = global.dbmsConfig.generateCreateOrReplaceQueries(
+          `${process.env.DB_SCHEMA}.FKTABLE`,
+          `(PKID INTEGER, NAME VARCHAR(24), FOREIGN KEY(PKID) REFERENCES ${process.env.DB_SCHEMA}.PKTABLE(ID))`
+        );
+        for (const q of queries2) { await connection.query(q); }
+      } else {
+        const query1 = `CREATE OR REPLACE TABLE ${process.env.DB_SCHEMA}.PKTABLE (ID INTEGER, NAME VARCHAR(24), AGE INTEGER, PRIMARY KEY(ID))`;
+        const query2 = `CREATE OR REPLACE TABLE ${process.env.DB_SCHEMA}.FKTABLE (PKID INTEGER, NAME VARCHAR(24), FOREIGN KEY(PKID) REFERENCES PKTABLE(ID))`;
+        await connection.query(query1);
+        await connection.query(query2);
+      }
     } catch (error) {
-      if (error.odbcErrors[0].code !== -601) {
+      // IBMi returns -601 when table already exists; other DBMS may throw differently
+      if (!error.odbcErrors || error.odbcErrors[0].code !== -601) {
         throw (error);
       }
     } finally {
@@ -24,14 +39,13 @@ describe('.foreignKeys(catalog, schema, table, fkCatalog, fkSchema, fkTable, cal
     let connection;
     try {
       connection = await odbc.connect(`${process.env.CONNECTION_STRING}`);
-      const query1 = `DROP TABLE ${process.env.DB_SCHEMA}.PKTABLE`;
-      const query2 = `DROP TABLE ${process.env.DB_SCHEMA}.FKTABLE`;
+      // Drop FK table first due to foreign key constraint
+      const query1 = `DROP TABLE ${process.env.DB_SCHEMA}.FKTABLE`;
+      const query2 = `DROP TABLE ${process.env.DB_SCHEMA}.PKTABLE`;
       await connection.query(query1);
       await connection.query(query2);
     } catch (error) {
-      if (error.odbcErrors[0].code !== -601) {
-        throw (error);
-      }
+      // ignore drop errors
     } finally {
       await connection.close();
     }
@@ -41,19 +55,19 @@ describe('.foreignKeys(catalog, schema, table, fkCatalog, fkSchema, fkTable, cal
     it('...should return information about a foreign key.', (done) => {
       odbc.connect(`${process.env.CONNECTION_STRING}`, (error, connection) => {
         assert.deepEqual(error, null);
-        connection.foreignKeys(null, `${process.env.DB_SCHEMA}`, 'PKTABLE', null, `${process.env.DB_SCHEMA}`, 'FKTABLE', (error1, results) => {
+        connection.foreignKeys(null, `${process.env.DB_SCHEMA}`, tableName('PKTABLE'), null, `${process.env.DB_SCHEMA}`, tableName('FKTABLE'), (error1, results) => {
           assert.strictEqual(error1, null);
           assert.strictEqual(results.length, 1);
           assert.deepStrictEqual(results.columns, global.dbmsConfig.sqlForeignKeysColumns);
 
           const result = results[0];
           // not testing for TABLE_CAT, dependent on the system
-          assert.strictEqual(result.PKTABLE_SCHEM, `${process.env.DB_SCHEMA}`);
-          assert.strictEqual(result.PKTABLE_NAME, 'PKTABLE');
-          assert.strictEqual(result.PKCOLUMN_NAME, 'ID');
-          assert.strictEqual(result.FKTABLE_SCHEM, `${process.env.DB_SCHEMA}`);
-          assert.strictEqual(result.FKTABLE_NAME, 'FKTABLE');
-          assert.strictEqual(result.FKCOLUMN_NAME, 'PKID');
+          assert.strictEqual(result.PKTABLE_SCHEM, tableName(`${process.env.DB_SCHEMA}`));
+          assert.strictEqual(result.PKTABLE_NAME, tableName('PKTABLE'));
+          assert.strictEqual(result.PKCOLUMN_NAME, colName('ID'));
+          assert.strictEqual(result.FKTABLE_SCHEM, tableName(`${process.env.DB_SCHEMA}`));
+          assert.strictEqual(result.FKTABLE_NAME, tableName('FKTABLE'));
+          assert.strictEqual(result.FKCOLUMN_NAME, colName('PKID'));
           done();
         });
       });
@@ -75,18 +89,18 @@ describe('.foreignKeys(catalog, schema, table, fkCatalog, fkSchema, fkTable, cal
     it('...should return information about a primary key.', async () => {
       const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`);
       
-      const results = await connection.foreignKeys(null, `${process.env.DB_SCHEMA}`, 'PKTABLE', null, `${process.env.DB_SCHEMA}`, 'FKTABLE');
+      const results = await connection.foreignKeys(null, `${process.env.DB_SCHEMA}`, tableName('PKTABLE'), null, `${process.env.DB_SCHEMA}`, tableName('FKTABLE'));
       assert.strictEqual(results.length, 1);
       assert.deepStrictEqual(results.columns, global.dbmsConfig.sqlForeignKeysColumns);
 
       const result = results[0];
       // not testing for TABLE_CAT, dependent on the system
-      assert.strictEqual(result.PKTABLE_SCHEM, `${process.env.DB_SCHEMA}`);
-      assert.strictEqual(result.PKTABLE_NAME, 'PKTABLE');
-      assert.strictEqual(result.PKCOLUMN_NAME, 'ID');
-      assert.strictEqual(result.FKTABLE_SCHEM, `${process.env.DB_SCHEMA}`);
-      assert.strictEqual(result.FKTABLE_NAME, 'FKTABLE');
-      assert.strictEqual(result.FKCOLUMN_NAME, 'PKID');
+      assert.strictEqual(result.PKTABLE_SCHEM, tableName(`${process.env.DB_SCHEMA}`));
+      assert.strictEqual(result.PKTABLE_NAME, tableName('PKTABLE'));
+      assert.strictEqual(result.PKCOLUMN_NAME, colName('ID'));
+      assert.strictEqual(result.FKTABLE_SCHEM, tableName(`${process.env.DB_SCHEMA}`));
+      assert.strictEqual(result.FKTABLE_NAME, tableName('FKTABLE'));
+      assert.strictEqual(result.FKCOLUMN_NAME, colName('PKID'));
       await connection.close();
     });
     it('...should return empty with bad parameters.', async () => {

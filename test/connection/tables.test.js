@@ -1,6 +1,7 @@
 /* eslint-env node, mocha */
 const assert = require('assert');
 const odbc   = require('../../lib/odbc');
+const { tableName } = require('../helpers');
 
 describe('.tables(catalog, schema, table, type, callback)...', () => {
   describe('...with callbacks...', () => {
@@ -14,8 +15,8 @@ describe('.tables(catalog, schema, table, type, callback)...', () => {
 
           const result = results[0];
           // not testing for TABLE_CAT, dependent on the system
-          assert.strictEqual(result.TABLE_SCHEM, `${process.env.DB_SCHEMA}`);
-          assert.strictEqual(result.TABLE_NAME, `${process.env.DB_TABLE}`);
+          assert.strictEqual(result.TABLE_SCHEM, tableName(`${process.env.DB_SCHEMA}`));
+          assert.strictEqual(result.TABLE_NAME, tableName(`${process.env.DB_TABLE}`));
           assert.strictEqual(result.TABLE_TYPE, 'TABLE');
           // not testing for REMARKS, dependent on the system
           done();
@@ -44,8 +45,8 @@ describe('.tables(catalog, schema, table, type, callback)...', () => {
 
       const result = results[0];
       // not testing for TABLE_CAT, dependent on the system
-      assert.strictEqual(result.TABLE_SCHEM, `${process.env.DB_SCHEMA}`);
-      assert.strictEqual(result.TABLE_NAME, `${process.env.DB_TABLE}`);
+      assert.strictEqual(result.TABLE_SCHEM, tableName(`${process.env.DB_SCHEMA}`));
+      assert.strictEqual(result.TABLE_NAME, tableName(`${process.env.DB_TABLE}`));
       assert.strictEqual(result.TABLE_TYPE, 'TABLE');
       // not testing for REMARKS, dependent on the system
     });
