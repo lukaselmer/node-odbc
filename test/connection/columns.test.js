@@ -1,6 +1,7 @@
 /* eslint-env node, mocha */
 const assert = require('assert');
 const odbc   = require('../../lib/odbc');
+const { colName } = require('../helpers');
 
 describe('.columns(catalog, schema, table, column, callback)...', () => {
   let connection = null;
@@ -20,17 +21,17 @@ describe('.columns(catalog, schema, table, column, callback)...', () => {
         assert.deepStrictEqual(results.columns, global.dbmsConfig.sqlColumnsColumns);
 
         const idColumn = results[0];
-        assert.deepEqual(idColumn.COLUMN_NAME, 'ID');
+        assert.deepEqual(idColumn.COLUMN_NAME, colName('ID'));
         assert.deepEqual(idColumn.DATA_TYPE, odbc.SQL_INTEGER);
         assert.deepEqual(idColumn.NULLABLE, odbc.SQL_NULLABLE);
 
         const nameColumn = results[1];
-        assert.deepEqual(nameColumn.COLUMN_NAME, 'NAME');
+        assert.deepEqual(nameColumn.COLUMN_NAME, colName('NAME'));
         assert.deepEqual(nameColumn.DATA_TYPE, odbc.SQL_VARCHAR);
         assert.deepEqual(nameColumn.NULLABLE, odbc.SQL_NULLABLE);
 
         const ageColumn = results[2];
-        assert.deepEqual(ageColumn.COLUMN_NAME, 'AGE');
+        assert.deepEqual(ageColumn.COLUMN_NAME, colName('AGE'));
         assert.deepEqual(ageColumn.DATA_TYPE, odbc.SQL_INTEGER);
         assert.deepEqual(ageColumn.NULLABLE, odbc.SQL_NULLABLE);
         done();
@@ -53,17 +54,17 @@ describe('.columns(catalog, schema, table, column, callback)...', () => {
       assert.deepStrictEqual(results.columns, global.dbmsConfig.sqlColumnsColumns);
 
       const idColumn = results[0];
-      assert.deepEqual(idColumn.COLUMN_NAME, 'ID');
+      assert.deepEqual(idColumn.COLUMN_NAME, colName('ID'));
       assert.deepEqual(idColumn.DATA_TYPE, odbc.SQL_INTEGER);
       assert.deepEqual(idColumn.NULLABLE, odbc.SQL_NULLABLE);
 
       const nameColumn = results[1];
-      assert.deepEqual(nameColumn.COLUMN_NAME, 'NAME');
+      assert.deepEqual(nameColumn.COLUMN_NAME, colName('NAME'));
       assert.deepEqual(nameColumn.DATA_TYPE, odbc.SQL_VARCHAR);
       assert.deepEqual(nameColumn.NULLABLE, odbc.SQL_NULLABLE);
 
       const ageColumn = results[2];
-      assert.deepEqual(ageColumn.COLUMN_NAME, 'AGE');
+      assert.deepEqual(ageColumn.COLUMN_NAME, colName('AGE'));
       assert.deepEqual(ageColumn.DATA_TYPE, odbc.SQL_INTEGER);
       assert.deepEqual(ageColumn.NULLABLE, odbc.SQL_NULLABLE);
     });

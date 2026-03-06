@@ -2,6 +2,7 @@
 const assert     = require('assert');
 const odbc       = require('../../');
 const { Cursor } = require('../../lib/Cursor');
+const { normalizeRow } = require('../helpers');
 
 describe('.query...', () => {
   describe('...with callbacks...', () => {
@@ -17,7 +18,7 @@ describe('.query...', () => {
             assert.deepEqual(error2, null);
             assert.notDeepEqual(result2, null);
             assert.deepEqual(result2.length, 1);
-            assert.deepEqual(result2[0], { ID: 1, NAME: 'committed', AGE: 10 });
+            assert.deepEqual(normalizeRow(result2[0]), { ID: 1, NAME: 'committed', AGE: 10 });
             pool.close((error3) => {
               assert.deepEqual(error3, null);
               done();
@@ -37,7 +38,7 @@ describe('.query...', () => {
             assert.deepEqual(error2, null);
             assert.notDeepEqual(result2, null);
             assert.deepEqual(result2.length, 1);
-            assert.deepEqual(result2[0], { ID: 1, NAME: 'committed', AGE: 10 });
+            assert.deepEqual(normalizeRow(result2[0]), { ID: 1, NAME: 'committed', AGE: 10 });
             pool.close((error3) => {
               assert.deepEqual(error3, null);
               done();
@@ -311,7 +312,7 @@ describe('.query...', () => {
       const result2 = await pool.query(`SELECT * FROM ${process.env.DB_SCHEMA}.${process.env.DB_TABLE}`);
       assert.notDeepEqual(result2, null);
       assert.deepEqual(result2.length, 1);
-      assert.deepEqual(result2[0], { ID: 1, NAME: 'committed', AGE: 10 });
+      assert.deepEqual(normalizeRow(result2[0]), { ID: 1, NAME: 'committed', AGE: 10 });
       await pool.close();
     });
     it('...should correctly identify function signature with .query({string}, {array})', async () => {
@@ -326,7 +327,7 @@ describe('.query...', () => {
       const result2 = await pool.query(`SELECT * FROM ${process.env.DB_SCHEMA}.${process.env.DB_TABLE}`);
       assert.notDeepEqual(result2, null);
       assert.deepEqual(result2.length, 1);
-      assert.deepEqual(result2[0], { ID: 1, NAME: 'committed', AGE: 10 });
+      assert.deepEqual(normalizeRow(result2[0]), { ID: 1, NAME: 'committed', AGE: 10 });
       await pool.close();
     });
     it('...should correctly identify function signature with .query({string}, {array}, {object})', async () => {

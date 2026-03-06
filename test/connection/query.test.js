@@ -2,6 +2,7 @@
 const assert         = require('assert');
 const odbc           = require('../../lib/odbc');
 const { Cursor }     = require('../../lib/Cursor');
+const { normalizeRow } = require('../helpers');
 
 describe('.query(sql, [parameters], [options], [callback])...', () => {
   it('...should throw a TypeError if function signature doesn\'t match accepted signatures.', async () => {
@@ -46,7 +47,7 @@ describe('.query(sql, [parameters], [options], [callback])...', () => {
             assert.deepEqual(error2, null);
             assert.notDeepEqual(result2, null);
             assert.deepEqual(result2.length, 1);
-            assert.deepEqual(result2[0], { ID: 1, NAME: 'committed', AGE: 10 });
+            assert.deepEqual(normalizeRow(result2[0]), { ID: 1, NAME: 'committed', AGE: 10 });
             connection.close((error3) => {
               assert.deepEqual(error3, null);
               done();
@@ -66,7 +67,7 @@ describe('.query(sql, [parameters], [options], [callback])...', () => {
             assert.deepEqual(error2, null);
             assert.notDeepEqual(result2, null);
             assert.deepEqual(result2.length, 1);
-            assert.deepEqual(result2[0], { ID: 1, NAME: 'committed', AGE: 10 });
+            assert.deepEqual(normalizeRow(result2[0]), { ID: 1, NAME: 'committed', AGE: 10 });
             connection.close((error3) => {
               assert.deepEqual(error3, null);
               done();
@@ -337,7 +338,7 @@ describe('.query(sql, [parameters], [options], [callback])...', () => {
       const result2 = await connection.query(`SELECT * FROM ${process.env.DB_SCHEMA}.${process.env.DB_TABLE}`);
       assert.notDeepEqual(result2, null);
       assert.deepEqual(result2.length, 1);
-      assert.deepEqual(result2[0], { ID: 1, NAME: 'committed', AGE: 10 });
+      assert.deepEqual(normalizeRow(result2[0]), { ID: 1, NAME: 'committed', AGE: 10 });
       await connection.close();
     });
     it('...should correctly identify function signature with .query({string}, {array})', async () => {
@@ -349,7 +350,7 @@ describe('.query(sql, [parameters], [options], [callback])...', () => {
       const result2 = await connection.query(`SELECT * FROM ${process.env.DB_SCHEMA}.${process.env.DB_TABLE}`);
       assert.notDeepEqual(result2, null);
       assert.deepEqual(result2.length, 1);
-      assert.deepEqual(result2[0], { ID: 1, NAME: 'committed', AGE: 10 });
+      assert.deepEqual(normalizeRow(result2[0]), { ID: 1, NAME: 'committed', AGE: 10 });
       await connection.close();
     });
     it('...should correctly identify function signature with .query({string}, {array}, {object})', async () => {

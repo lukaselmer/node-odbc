@@ -1,6 +1,7 @@
 /* eslint-env node, mocha */
 const assert = require('assert');
 const odbc   = require('../../lib/odbc');
+const { normalizeRow } = require('../helpers');
 
 describe('Queries...', () => {
   let connection = null;
@@ -18,19 +19,21 @@ describe('Queries...', () => {
     const result = await connection.query(`select cast(-1 as INTEGER) as TEST1, cast(-2147483648 as INTEGER) as TEST2, cast(2147483647 as INTEGER) as TEST3 ${global.dbms === 'ibmi' ? 'from sysibm.sysdummy1' : ''}`);
     assert.notDeepEqual(result, null);
     assert.deepEqual(result.length, 1);
-    assert.deepEqual(result[0].TEST1, -1);
-    assert.deepEqual(result[0].TEST2, -2147483648);
-    assert.deepEqual(result[0].TEST3, 2147483647);
+    assert.deepEqual(normalizeRow(result[0]).TEST1, -1);
+    assert.deepEqual(normalizeRow(result[0]).TEST2, -2147483648);
+    assert.deepEqual(normalizeRow(result[0]).TEST3, 2147483647);
   });
   it('...should pass w1nk/node-odbc issue #85', async () => {
     const result = await connection.query(`select cast(-1 as INTEGER) as TEST1, cast(-2147483648 as INTEGER) as TEST2, cast(2147483647 as INTEGER) as TEST3 ${global.dbms === 'ibmi' ? 'from sysibm.sysdummy1' : ''}`);
     assert.notDeepEqual(result, null);
     assert.deepEqual(result.length, 1);
-    assert.deepEqual(result[0].TEST1, -1);
-    assert.deepEqual(result[0].TEST2, -2147483648);
-    assert.deepEqual(result[0].TEST3, 2147483647);
+    assert.deepEqual(normalizeRow(result[0]).TEST1, -1);
+    assert.deepEqual(normalizeRow(result[0]).TEST2, -2147483648);
+    assert.deepEqual(normalizeRow(result[0]).TEST3, 2147483647);
   });
-  it('...should retrieve data from an SQL_(W)LONG data types', async () => {
+  it('...should retrieve data from an SQL_(W)LONG data types', async function() {
+    // This test uses IBMi-specific SQL types (CLOB, DBCLOB) and sysibm.sysdummy1
+    if (global.dbms !== 'ibmi') return this.skip();
     const alphabet = 'abcdefghijklmnopqrstuvwxyz'
     const result = await connection.query(`select cast ('${alphabet}' as CLOB) as SQL_LONGVARCHAR_FIELD, cast ('${alphabet}' as DBCLOB CCSID 1200) as SQL_WLONGVARCHAR_FIELD, cast (cast('${alphabet}' as CLOB CCSID 1208) as BLOB) as SQL_LONGVARBINARY_FIELD from sysibm.sysdummy1`);
     assert.notDeepEqual(result, null);
@@ -69,7 +72,9 @@ describe('Queries...', () => {
       nullable: false
     });
   });
-  it('...should retrieve data from an SQL_(W)LONG data types with a small initial buffer', async () => {
+  it('...should retrieve data from an SQL_(W)LONG data types with a small initial buffer', async function() {
+    // This test uses IBMi-specific SQL types (CLOB, DBCLOB) and sysibm.sysdummy1
+    if (global.dbms !== 'ibmi') return this.skip();
     const alphabet = 'abcdefghijklmnopqrstuvwxyz'
     const result = await connection.query(`select cast ('${alphabet}' as CLOB) as SQL_LONGVARCHAR_FIELD, cast ('${alphabet}' as DBCLOB CCSID 1200) as SQL_WLONGVARCHAR_FIELD, cast (cast('${alphabet}' as CLOB CCSID 1208) as BLOB) as SQL_LONGVARBINARY_FIELD from sysibm.sysdummy1`, { initialBufferSize: 4 });
     assert.notDeepEqual(result, null);

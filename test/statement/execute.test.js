@@ -2,6 +2,7 @@
 const assert = require('assert');
 const odbc   = require('../../lib/odbc');
 const { Cursor } = require('../../lib/Cursor');
+const { normalizeRow } = require('../helpers');
 
 describe('.execute([calback])...', () => {
   let connection = null;
@@ -54,9 +55,9 @@ describe('.execute([calback])...', () => {
                 assert.deepEqual(error5, null);
                 assert.notDeepEqual(result5, null);
                 assert.deepEqual(result5.length, 1);
-                assert.deepEqual(result5[0].ID, 1);
-                assert.deepEqual(result5[0].NAME, 'bound');
-                assert.deepEqual(result5[0].AGE, 10);
+                assert.deepEqual(normalizeRow(result5[0]).ID, 1);
+                assert.deepEqual(normalizeRow(result5[0]).NAME, 'bound');
+                assert.deepEqual(normalizeRow(result5[0]).AGE, 10);
                 done();
               });
             });
@@ -77,9 +78,9 @@ describe('.execute([calback])...', () => {
               assert.deepEqual(error5, null);
               assert.notDeepEqual(result5, null);
               assert.deepEqual(result5.length, 1);
-              assert.deepEqual(result5[0].ID, 1);
-              assert.deepEqual(result5[0].NAME, 'bound');
-              assert.deepEqual(result5[0].AGE, 10);
+              assert.deepEqual(normalizeRow(result5[0]).ID, 1);
+              assert.deepEqual(normalizeRow(result5[0]).NAME, 'bound');
+              assert.deepEqual(normalizeRow(result5[0]).AGE, 10);
               done();
             });
           });
@@ -146,9 +147,9 @@ describe('.execute([calback])...', () => {
                 assert.deepEqual(error5, null);
                 assert.notDeepEqual(result1, null);
                 assert.deepEqual(result1.length, 1);
-                assert.deepEqual(result1[0].ID, 1);
-                assert.deepEqual(result1[0].NAME, 'bound');
-                assert.deepEqual(result1[0].AGE, 10);
+                assert.deepEqual(normalizeRow(result1[0]).ID, 1);
+                assert.deepEqual(normalizeRow(result1[0]).NAME, 'bound');
+                assert.deepEqual(normalizeRow(result1[0]).AGE, 10);
                 cursor.fetch((error6, result2) => {
                   assert.deepEqual(error6, null);
                   assert.notDeepEqual(result2, null);
@@ -183,9 +184,9 @@ describe('.execute([calback])...', () => {
                 assert.deepEqual(error5, null);
                 assert.notDeepEqual(result1, null);
                 assert.deepEqual(result1.length, 1);
-                assert.deepEqual(result1[0].ID, 1);
-                assert.deepEqual(result1[0].NAME, 'bound');
-                assert.deepEqual(result1[0].AGE, 10);
+                assert.deepEqual(normalizeRow(result1[0]).ID, 1);
+                assert.deepEqual(normalizeRow(result1[0]).NAME, 'bound');
+                assert.deepEqual(normalizeRow(result1[0]).AGE, 10);
                 cursor.fetch((error6, result2) => {
                   assert.deepEqual(error6, null);
                   assert.notDeepEqual(result2, null);
@@ -220,9 +221,9 @@ describe('.execute([calback])...', () => {
                 assert.deepEqual(error5, null);
                 assert.notDeepEqual(result1, null);
                 assert.deepEqual(result1.length, 1);
-                assert.deepEqual(result1[0].ID, 1);
-                assert.deepEqual(result1[0].NAME, 'bound');
-                assert.deepEqual(result1[0].AGE, 10);
+                assert.deepEqual(normalizeRow(result1[0]).ID, 1);
+                assert.deepEqual(normalizeRow(result1[0]).NAME, 'bound');
+                assert.deepEqual(normalizeRow(result1[0]).AGE, 10);
                 cursor.fetch((error6, result2) => {
                   assert.deepEqual(error6, null);
                   assert.notDeepEqual(result2, null);
@@ -235,9 +236,9 @@ describe('.execute([calback])...', () => {
                       assert.deepEqual(error8, null);
                       assert.notDeepEqual(statementResult, null);
                       assert.deepEqual(statementResult.length, 1);
-                      assert.deepEqual(statementResult[0].ID, 1);
-                      assert.deepEqual(statementResult[0].NAME, 'bound');
-                      assert.deepEqual(statementResult[0].AGE, 10);
+                      assert.deepEqual(normalizeRow(statementResult[0]).ID, 1);
+                      assert.deepEqual(normalizeRow(statementResult[0]).NAME, 'bound');
+                      assert.deepEqual(normalizeRow(statementResult[0]).AGE, 10);
                       statement.close((error9) => {
                         assert.deepEqual(error9, null);
                         done();
@@ -281,9 +282,9 @@ describe('.execute([calback])...', () => {
       const result2 = await connection.query(`SELECT * FROM ${process.env.DB_SCHEMA}.${process.env.DB_TABLE}`);
       assert.notDeepEqual(result2, null);
       assert.deepEqual(result2.length, 1);
-      assert.deepEqual(result2[0].ID, 1);
-      assert.deepEqual(result2[0].NAME, 'bound');
-      assert.deepEqual(result2[0].AGE, 10);
+      assert.deepEqual(normalizeRow(result2[0]).ID, 1);
+      assert.deepEqual(normalizeRow(result2[0]).NAME, 'bound');
+      assert.deepEqual(normalizeRow(result2[0]).AGE, 10);
     });
     it('...should execute if bind has not been called and the prepared statement has no parameters.', async () => {
       const statement = await connection.createStatement();
@@ -295,9 +296,9 @@ describe('.execute([calback])...', () => {
       const result2 = await connection.query(`SELECT * FROM ${process.env.DB_SCHEMA}.${process.env.DB_TABLE}`);
       assert.notDeepEqual(result2, null);
       assert.deepEqual(result2.length, 1);
-      assert.deepEqual(result2[0].ID, 1);
-      assert.deepEqual(result2[0].NAME, 'bound');
-      assert.deepEqual(result2[0].AGE, 10);
+      assert.deepEqual(normalizeRow(result2[0]).ID, 1);
+      assert.deepEqual(normalizeRow(result2[0]).NAME, 'bound');
+      assert.deepEqual(normalizeRow(result2[0]).AGE, 10);
     });
     it('...should not execute if prepare has not been called.', async () => {
       const statement = await connection.createStatement();
@@ -332,9 +333,9 @@ describe('.execute([calback])...', () => {
       assert.deepEqual(cursor instanceof Cursor, true);
       let result = await cursor.fetch();
       assert.deepEqual(result.length, 1);
-      assert.deepEqual(result[0].ID, 1);
-      assert.deepEqual(result[0].NAME, 'bound');
-      assert.deepEqual(result[0].AGE, 10);
+      assert.deepEqual(normalizeRow(result[0]).ID, 1);
+      assert.deepEqual(normalizeRow(result[0]).NAME, 'bound');
+      assert.deepEqual(normalizeRow(result[0]).AGE, 10);
       result = await cursor.fetch();
       assert.deepEqual(result.length, 0);
       assert.deepEqual(cursor.noData, true);
@@ -350,9 +351,9 @@ describe('.execute([calback])...', () => {
       assert.deepEqual(cursor instanceof Cursor, true);
       let result = await cursor.fetch();
       assert.deepEqual(result.length, 1);
-      assert.deepEqual(result[0].ID, 1);
-      assert.deepEqual(result[0].NAME, 'bound');
-      assert.deepEqual(result[0].AGE, 10);
+      assert.deepEqual(normalizeRow(result[0]).ID, 1);
+      assert.deepEqual(normalizeRow(result[0]).NAME, 'bound');
+      assert.deepEqual(normalizeRow(result[0]).AGE, 10);
       result = await cursor.fetch();
       assert.deepEqual(result.length, 0);
       assert.deepEqual(cursor.noData, true);
@@ -368,9 +369,9 @@ describe('.execute([calback])...', () => {
       assert.deepEqual(cursor instanceof Cursor, true);
       let cursorResult = await cursor.fetch();
       assert.deepEqual(cursorResult.length, 1);
-      assert.deepEqual(cursorResult[0].ID, 1);
-      assert.deepEqual(cursorResult[0].NAME, 'bound');
-      assert.deepEqual(cursorResult[0].AGE, 10);
+      assert.deepEqual(normalizeRow(cursorResult[0]).ID, 1);
+      assert.deepEqual(normalizeRow(cursorResult[0]).NAME, 'bound');
+      assert.deepEqual(normalizeRow(cursorResult[0]).AGE, 10);
       cursorResult = await cursor.fetch();
       assert.deepEqual(cursorResult.length, 0);
       assert.deepEqual(cursor.noData, true);
@@ -378,9 +379,9 @@ describe('.execute([calback])...', () => {
       // use the same prepared statement, but this time without a Cursor
       const statementResult = await statement.execute();
       assert.deepEqual(statementResult.length, 1);
-      assert.deepEqual(statementResult[0].ID, 1);
-      assert.deepEqual(statementResult[0].NAME, 'bound');
-      assert.deepEqual(statementResult[0].AGE, 10);
+      assert.deepEqual(normalizeRow(statementResult[0]).ID, 1);
+      assert.deepEqual(normalizeRow(statementResult[0]).NAME, 'bound');
+      assert.deepEqual(normalizeRow(statementResult[0]).AGE, 10);
       await statement.close();
     });
     it('...should accept a timeout option without crashing', async () => {

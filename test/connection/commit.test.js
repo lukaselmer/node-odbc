@@ -1,6 +1,7 @@
 /* eslint-env node, mocha */
 const assert = require('assert');
 const odbc   = require('../../lib/odbc');
+const { normalizeRow } = require('../helpers');
 
 describe('.commit([callback])...', () => {
   describe('...with callbacks...', () => {
@@ -17,14 +18,14 @@ describe('.commit([callback])...', () => {
                 assert.deepEqual(error3, null);
                 assert.notDeepEqual(result3, null);
                 assert.deepEqual(result3.length, 1);
-                assert.deepEqual(result3[0], { ID: 2, NAME: 'rolledback', AGE: 20 });
+                assert.deepEqual(normalizeRow(result3[0]), { ID: 2, NAME: 'rolledback', AGE: 20 });
                 connection.commit((error4) => {
                   assert.deepEqual(error4, null);
                   connection.query(`SELECT * FROM ${process.env.DB_SCHEMA}.${process.env.DB_TABLE}`, (error5, result5) => {
                     assert.deepEqual(error5, null);
                     assert.notDeepEqual(result5, null);
                     assert.deepEqual(result5.length, 1);
-                    assert.deepEqual(result5[0], { ID: 2, NAME: 'rolledback', AGE: 20 });
+                    assert.deepEqual(normalizeRow(result5[0]), { ID: 2, NAME: 'rolledback', AGE: 20 });
                     connection.close((error6) => {
                       assert.deepEqual(error6, null);
                       done();
@@ -50,13 +51,13 @@ describe('.commit([callback])...', () => {
             connection.query(`SELECT * FROM ${process.env.DB_SCHEMA}.${process.env.DB_TABLE}`, (error3, result3) => {
               assert.deepEqual(error3, null);
               assert.deepEqual(result3.length, 1);
-              assert.deepEqual(result3[0], { ID: 1, NAME: 'committed', AGE: 10 });
+              assert.deepEqual(normalizeRow(result3[0]), { ID: 1, NAME: 'committed', AGE: 10 });
               connection.commit((error4) => {
                 assert.deepEqual(error4, null);
                 connection.query(`SELECT * FROM ${process.env.DB_SCHEMA}.${process.env.DB_TABLE}`, (error5, result5) => {
                   assert.deepEqual(error5, null);
                   assert.deepEqual(result5.length, 1);
-                  assert.deepEqual(result5[0], { ID: 1, NAME: 'committed', AGE: 10 });
+                  assert.deepEqual(normalizeRow(result5[0]), { ID: 1, NAME: 'committed', AGE: 10 });
                   connection.close((error6) => {
                     assert.deepEqual(error6, null);
                     done();
@@ -109,12 +110,12 @@ describe('.commit([callback])...', () => {
       const result2 = await connection.query(`SELECT * FROM ${process.env.DB_SCHEMA}.${process.env.DB_TABLE}`);
       assert.notDeepEqual(result2, null);
       assert.deepEqual(result2.length, 1);
-      assert.deepEqual(result2[0], { ID: 1, NAME: 'comitted', AGE: 10 });
+      assert.deepEqual(normalizeRow(result2[0]), { ID: 1, NAME: 'comitted', AGE: 10 });
       await connection.commit();
       const result3 = await connection.query(`SELECT * FROM ${process.env.DB_SCHEMA}.${process.env.DB_TABLE}`);
       assert.notDeepEqual(result3, null);
       assert.deepEqual(result3.length, 1);
-      assert.deepEqual(result3[0], { ID: 1, NAME: 'comitted', AGE: 10 });
+      assert.deepEqual(normalizeRow(result3[0]), { ID: 1, NAME: 'comitted', AGE: 10 });
       await connection.close();
     });
     it('...shouldn\'t have adverse effects if called outside beginTransaction().', async () => {
@@ -125,12 +126,12 @@ describe('.commit([callback])...', () => {
       const result2 = await connection.query(`SELECT * FROM ${process.env.DB_SCHEMA}.${process.env.DB_TABLE}`);
       assert.notDeepEqual(result2, null);
       assert.deepEqual(result2.length, 1);
-      assert.deepEqual(result2[0], { ID: 1, NAME: 'committed', AGE: 10 });
+      assert.deepEqual(normalizeRow(result2[0]), { ID: 1, NAME: 'committed', AGE: 10 });
       await connection.commit();
       const result3 = await connection.query(`SELECT * FROM ${process.env.DB_SCHEMA}.${process.env.DB_TABLE}`);
       assert.notDeepEqual(result3, null);
       assert.deepEqual(result3.length, 1);
-      assert.deepEqual(result3[0], { ID: 1, NAME: 'committed', AGE: 10 });
+      assert.deepEqual(normalizeRow(result3[0]), { ID: 1, NAME: 'committed', AGE: 10 });
       await connection.close();
     });
     it('...shouldn\'t commit if called after a transaction is already ended with rollback().', async () => {
