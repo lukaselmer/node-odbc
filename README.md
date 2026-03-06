@@ -30,8 +30,6 @@ This package is a native addon written in C++ using
 Currently supported versions include:
 
 * Node.js 22
-* Node.js 20
-* Node.js 18
 
 ---
 
