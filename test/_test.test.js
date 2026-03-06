@@ -7,7 +7,7 @@ global.dbms = undefined
 before(async () => {
   if (process.env.DBMS) {
     if (DBMS_LIST.indexOf(process.env.DBMS) > -1) {
-      require('dotenv').config({ path: `test/DBMS/${process.env.DBMS}/.env` })
+      require('dotenv').config({ path: `test/DBMS/${process.env.DBMS}/.env`, quiet: true })
       global.dbms = process.env.DBMS
       global.dbmsConfig = require(`./DBMS/${process.env.DBMS}/config.js`)
     } else {
