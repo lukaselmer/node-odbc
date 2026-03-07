@@ -33,19 +33,13 @@ jobs:
       run: npm install -g node-gyp
     - name: Install npm dependencies
       run: npm ci
-    - name: Patch node-pre-gyp on Windows
-      if: ${{ startsWith(matrix.os, 'windows') }}
-      # https://github.com/mapbox/node-pre-gyp/issues/715
-      run: node .github/fix-node-pre-gyp-windows.js
-    - name: Build Binary
-      run: ./node_modules/.bin/node-pre-gyp rebuild --production
-    - name: Package Binary
-      run: ./node_modules/.bin/node-pre-gyp package
-    - name: Upload Artifact
+    - name: Build Prebuild
+      run: npx prebuildify --napi --strip
+    - name: Upload Prebuilds
       uses: actions/upload-artifact@v5
       with:
-        name: binaries-${{ matrix.os }}
-        path: build/stage/*.tar.gz
+        name: prebuilds-${{ matrix.os }}
+        path: prebuilds/
 
   create-release:
     runs-on: ubuntu-latest
@@ -65,12 +59,12 @@ jobs:
     - name: get-npm-version
       id: package-version
       run: jq -r '"version=" + .version' package.json  >> "$GITHUB_OUTPUT"
-    # Download all of the various binaries that were created
-    - name: Download built binaries from workflow
+    # Download all prebuilds from each platform into the prebuilds/ folder
+    - name: Download prebuilds from workflow
       uses: actions/download-artifact@v8
       with:
-        path: binaries
-        pattern: binaries-*
+        path: prebuilds
+        pattern: prebuilds-*
         merge-multiple: true
     - name: Create Release
       id: create_release
@@ -80,8 +74,7 @@ jobs:
         prerelease: false
         name: ${{ steps.package-version.outputs.version }}
         generate_release_notes: true
-        fail_on_unmatched_files: true
-        files:
-          ./binaries/odbc-*.tar.gz
+    - name: Install npm dependencies
+      run: npm ci
     - name: Publish to NPM
       run: npm publish --access public
