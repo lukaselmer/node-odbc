@@ -1,6 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [2.7.0] - 2026-03-07
+### Changed
+- Replaced `@mapbox/node-pre-gyp` with `prebuildify` + `node-gyp-build` for native addon distribution
+- Prebuilt binaries are now bundled directly in the npm package instead of downloaded from GitHub Releases at install time
+- Removed Windows-specific `node-pre-gyp` workaround
+- Drastically reduced runtime dependencies (~20 transitive packages → 2)
+
 ## [2.5.0] - 2026-03-06
 ### Changed
 - Forked from `odbc` and published as `@lukaselmer/odbc` to include merged but unreleased changes
@@ -19,7 +26,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 - `primaryKeys` instance function on `Connection` to call ODBC SQLPrimaryKeys function
 - `foreignKeys` instance function on `Connection` to call ODBC SQLForeignKeys function
-- Binaries added for all supported N-API versions for all GitHub Actions runners 
+- Binaries added for all supported N-API versions for all GitHub Actions runners
 
 ### Fixed
 - Fixed VARCHAR(MAX) fields creating 0-sized buffers (MSSQL)
@@ -40,7 +47,7 @@ All notable changes to this project will be documented in this file.
 
 ## [2.4.2] - 2022-02-07
 ### Added
-- `binding.gyp` build instructions for MacOS 
+- `binding.gyp` build instructions for MacOS
 - `Statement`'s `.execute` function can now return a `Cursor` when the correct queryOption is passed
 
 ### Fixed
@@ -70,7 +77,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - Connection generation in pools is now more efficient and doesn't block queries
-- Retrieving binary data 
+- Retrieving binary data
 - Improved TypeScript definitions
 - BIGINT fields are now bound by default correctly
 - Fixed multiple memory leaks
@@ -103,7 +110,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - Fixed bug with REAL, DECIMAL, and NUMERIC fields ocassionaly returning incorrect results
 
-### Changed 
+### Changed
 - Windows binaries are now built with `UNICODE` defined by default (like in 1.x)
 
 ### Added
