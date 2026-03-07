@@ -1242,8 +1242,9 @@ class CallProcedureAsyncWorker : public ODBCAsyncWorker {
 
       #ifndef UNICODE
       char *combinedProcedureName = new char[1024]();
-      sprintf (
+      snprintf (
         combinedProcedureName,
+        1024,
         "%s%s%s%s%s",
         data->catalog ? (const char*)data->catalog : "",
         data->catalog ? "." : "",
@@ -1329,9 +1330,9 @@ class CallProcedureAsyncWorker : public ODBCAsyncWorker {
       if (data->storedRows.size() == 0) {
         char errorString[255];
         #ifndef UNICODE
-        sprintf(errorString, "[odbc] CallProcedureAsyncWorker::Execute: Stored procedure '%s' doesn't exist", combinedProcedureName);
+        snprintf(errorString, sizeof(errorString), "[odbc] CallProcedureAsyncWorker::Execute: Stored procedure '%s' doesn't exist", combinedProcedureName);
         #else
-        sprintf(errorString, "[odbc] CallProcedureAsyncWorker::Execute: Stored procedure '%S' doesn't exist", combinedProcedureName);
+        snprintf(errorString, sizeof(errorString), "[odbc] CallProcedureAsyncWorker::Execute: Stored procedure '%S' doesn't exist", combinedProcedureName);
         #endif
         SetError(errorString);
         return;
@@ -1845,7 +1846,7 @@ class CallProcedureAsyncWorker : public ODBCAsyncWorker {
       size_t sqlStringSize = 1024 + parameterStringSize + sizeof("{ CALL  () }");
       data->sql = new SQLTCHAR[sqlStringSize];
 #ifndef UNICODE
-      sprintf((char *)data->sql, "{ CALL %s (%s) }", combinedProcedureName, parameterString);
+      snprintf((char *)data->sql, sqlStringSize, "{ CALL %s (%s) }", combinedProcedureName, parameterString);
 #else
       // Note: On Windows, %s and %S change their behavior depending on whether
       // it's passed to a printf function or a wprintf function. Since we're passing
