@@ -66,6 +66,13 @@ jobs:
         path: prebuilds
         pattern: prebuilds-*
         merge-multiple: true
+    - name: Verify prebuild artifacts exist
+      run: |
+        echo "Verifying that prebuild .node artifacts exist in the prebuilds/ directory..."
+        if ! find prebuilds -type f -name '*.node' | grep -q .; then
+          echo "Error: No .node prebuild artifacts found under prebuilds/. Failing release."
+          exit 1
+        fi
     - name: Create Release
       id: create_release
       uses: softprops/action-gh-release@v2
