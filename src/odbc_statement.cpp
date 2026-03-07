@@ -95,14 +95,10 @@ SQLRETURN ODBCStatement::Free() {
 class PrepareAsyncWorker : public ODBCAsyncWorker {
 
   private:
-    ODBCStatement  *odbcStatement;
-    ODBCConnection *odbcConnection;
     StatementData  *data;
 
   public:
     PrepareAsyncWorker(ODBCStatement *odbcStatement, Napi::Function& callback) : ODBCAsyncWorker(callback),
-    odbcStatement(odbcStatement),
-    odbcConnection(odbcStatement->odbcConnection),
     data(odbcStatement->data) {}
 
     ~PrepareAsyncWorker() {}
@@ -216,14 +212,10 @@ class BindAsyncWorker : public ODBCAsyncWorker {
   public:
 
     BindAsyncWorker(ODBCStatement *odbcStatement, Napi::Function& callback) : ODBCAsyncWorker(callback),
-    odbcStatement(odbcStatement),
-    odbcConnection(odbcStatement->odbcConnection),
     data(odbcStatement->data) {}
 
   private:
 
-    ODBCStatement  *odbcStatement;
-    ODBCConnection *odbcConnection;
     StatementData  *data;
 
     ~BindAsyncWorker() { }
