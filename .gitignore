@@ -7,3 +7,4 @@ core*
 .vscode
 build*/
 lib/bindings
+prebuilds
