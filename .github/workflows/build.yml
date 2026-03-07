@@ -25,5 +25,7 @@ jobs:
     - name: Install dependencies (Linux)
       if: ${{ startsWith(matrix.os, 'ubuntu') }}
       run: sudo apt-get update && sudo apt-get install -y unixodbc-dev
+    - name: Install npm dependencies
+      run: npm ci
     - name: Build package
-      run: npm ci --production --build-from-source
+      run: npm run build
