@@ -50,7 +50,7 @@
   "dependencies": {
     "@mapbox/node-pre-gyp": "^2.0.0",
     "async": "^3.2.6",
-    "node-addon-api": "^3.2.1"
+    "node-addon-api": "^8.6.0"
   },
   "gypfile": true,
   "devDependencies": {
