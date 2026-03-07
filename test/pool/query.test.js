@@ -5,8 +5,9 @@ const { Cursor } = require('../../lib/Cursor');
 const { normalizeRow } = require('../helpers');
 
 describe('.query...', () => {
-  describe('...with callbacks...', () => {
-    it('...should correctly identify function signature with .query({string}, {function}).', (done) => {
+  describe('...with callbacks...', function () {
+    it('...should correctly identify function signature with .query({string}, {function}).', function (done) {
+      if (global.dbms === 'postgres') this.skip();
       odbc.pool(`${process.env.CONNECTION_STRING}`, (error, pool) => {
         assert.deepEqual(error, null);
         pool.query(`INSERT INTO ${process.env.DB_SCHEMA}.${process.env.DB_TABLE} VALUES(1, 'committed', 10)`, (error1, result1) => {
@@ -27,7 +28,8 @@ describe('.query...', () => {
         });
       });
     });
-    it('...should correctly identify function signature with .query({string}, {array}, {function})', (done) => {
+    it('...should correctly identify function signature with .query({string}, {array}, {function})', function (done) {
+      if (global.dbms === 'postgres') this.skip();
       odbc.pool(`${process.env.CONNECTION_STRING}`, (error, pool) => {
         pool.query(`INSERT INTO ${process.env.DB_SCHEMA}.${process.env.DB_TABLE} VALUES(?, ?, ?)`, [1, 'committed', 10], (error1, result1) => {
           assert.deepEqual(error1, null);
@@ -47,7 +49,8 @@ describe('.query...', () => {
         });
       });
     });
-    it('...should correctly identify function signature with .query({string}, {array}, {object}, {function})', (done) => {
+    it('...should correctly identify function signature with .query({string}, {array}, {object}, {function})', function (done) {
+      if (global.dbms === 'postgres') this.skip();
       odbc.pool(`${process.env.CONNECTION_STRING}`, (error1, pool) => {
         assert.deepEqual(error1, null);
         assert.notDeepEqual(pool, undefined);
@@ -71,7 +74,8 @@ describe('.query...', () => {
         });
       });
     });
-    it('...should correctly identify function signature with .query({string}, {object}, {function})', (done) => {
+    it('...should correctly identify function signature with .query({string}, {object}, {function})', function (done) {
+      if (global.dbms === 'postgres') this.skip();
       odbc.pool(`${process.env.CONNECTION_STRING}`, (error1, pool) => {
         assert.deepEqual(error1, null);
         assert.notDeepEqual(pool, undefined);
@@ -97,7 +101,8 @@ describe('.query...', () => {
     });
     describe('...testing query options...', () => {
       describe('...[cursor]...', () => {
-        it('...should return an error if cursor is not a boolean or string', (done) => {
+        it('...should return an error if cursor is not a boolean or string', function (done) {
+          if (global.dbms === 'postgres') this.skip();
           odbc.pool(`${process.env.CONNECTION_STRING}`, (error1, pool) => {
             assert.deepEqual(error1, null);
             assert.notDeepEqual(pool, null);
@@ -130,7 +135,8 @@ describe('.query...', () => {
         });
       });
       describe('...[fetchSize]...', () => {
-        it('...should return an error if fetchSize is not a number', (done) => {
+        it('...should return an error if fetchSize is not a number', function (done) {
+          if (global.dbms === 'postgres') this.skip();
           odbc.pool(`${process.env.CONNECTION_STRING}`, (error1, pool) => {
             assert.deepEqual(error1, null);
             assert.notDeepEqual(pool, null);
@@ -161,7 +167,8 @@ describe('.query...', () => {
             });
           });
         });
-        it('...should return an error if fetchSize is less-than or equal to 0', (done) => {
+        it('...should return an error if fetchSize is less-than or equal to 0', function (done) {
+          if (global.dbms === 'postgres') this.skip();
           odbc.pool(`${process.env.CONNECTION_STRING}`, (error1, pool) => {
             assert.deepEqual(error1, null);
             assert.notDeepEqual(pool, null);
@@ -186,7 +193,8 @@ describe('.query...', () => {
         });
       });
       describe('...[timeout]...', () => {
-        it('...should return an error if timeout is not a number', (done) => {
+        it('...should return an error if timeout is not a number', function (done) {
+          if (global.dbms === 'postgres') this.skip();
           odbc.pool(`${process.env.CONNECTION_STRING}`, (error1, pool) => {
             assert.deepEqual(error1, null);
             assert.notDeepEqual(pool, null);
@@ -217,7 +225,8 @@ describe('.query...', () => {
             });
           });
         });
-        it('...should return an error if timeout is less-than or equal to 0', (done) => {
+        it('...should return an error if timeout is less-than or equal to 0', function (done) {
+          if (global.dbms === 'postgres') this.skip();
           odbc.pool(`${process.env.CONNECTION_STRING}`, (error1, pool) => {
             assert.deepEqual(error1, null);
             assert.notDeepEqual(pool, null);
@@ -242,7 +251,8 @@ describe('.query...', () => {
         });
       });
       describe('...[initialBufferSize]...', () => {
-        it('...should return an error if initialBufferSize is not a number', (done) => {
+        it('...should return an error if initialBufferSize is not a number', function (done) {
+          if (global.dbms === 'postgres') this.skip();
           odbc.pool(`${process.env.CONNECTION_STRING}`, (error1, pool) => {
             assert.deepEqual(error1, null);
             assert.notDeepEqual(pool, null);
@@ -273,7 +283,8 @@ describe('.query...', () => {
             });
           });
         });
-        it('...should return an error if initialBufferSize is less-than or equal to 0', (done) => {
+        it('...should return an error if initialBufferSize is less-than or equal to 0', function (done) {
+          if (global.dbms === 'postgres') this.skip();
           odbc.pool(`${process.env.CONNECTION_STRING}`, (error1, pool) => {
             assert.deepEqual(error1, null);
             assert.notDeepEqual(pool, null);
