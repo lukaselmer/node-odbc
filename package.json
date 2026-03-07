@@ -49,8 +49,7 @@
   },
   "dependencies": {
     "@mapbox/node-pre-gyp": "^2.0.0",
-    "async": "^3.2.6",
-    "node-addon-api": "^8.6.0"
+    "async": "^3.2.6"
   },
   "gypfile": true,
   "devDependencies": {
@@ -59,7 +58,8 @@
     "dotenv": "^17.0.0",
     "eslint": "^10.0.3",
     "globals": "^17.4.0",
-    "mocha": "^11.7.4"
+    "mocha": "^11.7.4",
+    "node-addon-api": "^8.6.0"
   },
   "binary": {
     "module_name": "odbc",
