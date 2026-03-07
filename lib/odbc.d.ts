@@ -205,6 +205,74 @@ declare namespace odbc {
 
   function pool(connectionString: string): Promise<Pool>;
   function pool(connectionObject: PoolParameters): Promise<Pool>;
+
+  // ODBC version
+  const ODBCVER: number;
+
+  // Transaction completion types
+  const SQL_COMMIT: number;
+  const SQL_ROLLBACK: number;
+
+  // Connection info types
+  const SQL_USER_NAME: number;
+
+  // Parameter types
+  const SQL_PARAM_INPUT: number;
+  const SQL_PARAM_INPUT_OUTPUT: number;
+  const SQL_PARAM_OUTPUT: number;
+
+  // SQL data types
+  const SQL_CHAR: number;
+  const SQL_VARCHAR: number;
+  const SQL_LONGVARCHAR: number;
+  const SQL_WCHAR: number;
+  const SQL_WVARCHAR: number;
+  const SQL_WLONGVARCHAR: number;
+  const SQL_DECIMAL: number;
+  const SQL_NUMERIC: number;
+  const SQL_SMALLINT: number;
+  const SQL_INTEGER: number;
+  const SQL_REAL: number;
+  const SQL_FLOAT: number;
+  const SQL_DOUBLE: number;
+  const SQL_BIT: number;
+  const SQL_TINYINT: number;
+  const SQL_BIGINT: number;
+  const SQL_BINARY: number;
+  const SQL_VARBINARY: number;
+  const SQL_LONGVARBINARY: number;
+  const SQL_TYPE_DATE: number;
+  const SQL_TYPE_TIME: number;
+  const SQL_TYPE_TIMESTAMP: number;
+  const SQL_INTERVAL_MONTH: number;
+  const SQL_INTERVAL_YEAR: number;
+  const SQL_INTERVAL_YEAR_TO_MONTH: number;
+  const SQL_INTERVAL_DAY: number;
+  const SQL_INTERVAL_HOUR: number;
+  const SQL_INTERVAL_MINUTE: number;
+  const SQL_INTERVAL_SECOND: number;
+  const SQL_INTERVAL_DAY_TO_HOUR: number;
+  const SQL_INTERVAL_DAY_TO_MINUTE: number;
+  const SQL_INTERVAL_DAY_TO_SECOND: number;
+  const SQL_INTERVAL_HOUR_TO_MINUTE: number;
+  const SQL_INTERVAL_HOUR_TO_SECOND: number;
+  const SQL_INTERVAL_MINUTE_TO_SECOND: number;
+  const SQL_GUID: number;
+
+  // Nullable types
+  const SQL_NO_NULLS: number;
+  const SQL_NULLABLE: number;
+  const SQL_NULLABLE_UNKNOWN: number;
+
+  // Transaction isolation levels
+  const SQL_TXN_READ_UNCOMMITTED: number;
+  const SQL_TRANSACTION_READ_UNCOMMITTED: number;
+  const SQL_TXN_READ_COMMITTED: number;
+  const SQL_TRANSACTION_READ_COMMITTED: number;
+  const SQL_TXN_REPEATABLE_READ: number;
+  const SQL_TRANSACTION_REPEATABLE_READ: number;
+  const SQL_TXN_SERIALIZABLE: number;
+  const SQL_TRANSACTION_SERIALIZABLE: number;
 }
 
 export = odbc;
