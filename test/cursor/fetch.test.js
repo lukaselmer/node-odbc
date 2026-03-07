@@ -2,6 +2,7 @@
 const assert     = require('assert');
 const odbc       = require('../../lib/odbc');
 const { Cursor } = require('../../lib/Cursor');
+const { normalizeRow } = require('../helpers');
 
 const TABLE_NAME = "FETCH_TABLE";
 
@@ -122,17 +123,17 @@ describe('.fetch([callback])...', () => {
             assert.notDeepEqual(result1, null);
             assert.deepEqual(cursor.noData, false);
             assert.deepEqual(result1.length, 3);
-            assert.deepEqual(result1[0]["COL1"], 1);
-            assert.deepEqual(result1[1]["COL1"], 2);
-            assert.deepEqual(result1[2]["COL1"], 3);
+            assert.deepEqual(normalizeRow(result1[0])["COL1"], 1);
+            assert.deepEqual(normalizeRow(result1[1])["COL1"], 2);
+            assert.deepEqual(normalizeRow(result1[2])["COL1"], 3);
             cursor.fetch((error3, result2) => {
               assert.deepEqual(error3, null);
               assert.notDeepEqual(result2, null);
               assert.deepEqual(cursor.noData, false);
               assert.deepEqual(result2.length, 3);
-              assert.deepEqual(result2[0]["COL1"], 4);
-              assert.deepEqual(result2[1]["COL1"], 5);
-              assert.deepEqual(result2[2]["COL1"], 6);
+              assert.deepEqual(normalizeRow(result2[0])["COL1"], 4);
+              assert.deepEqual(normalizeRow(result2[1])["COL1"], 5);
+              assert.deepEqual(normalizeRow(result2[2])["COL1"], 6);
               cursor.close((error3) => {
                 assert.deepEqual(error3, null);
                 done();
@@ -197,25 +198,25 @@ describe('.fetch([callback])...', () => {
               assert.notDeepEqual(result1, null);
               assert.deepEqual(cursor1.noData, false);
               assert.deepEqual(result1.length, 3);
-              assert.deepEqual(result1[0]["COL1"], 1);
-              assert.deepEqual(result1[1]["COL1"], 2);
-              assert.deepEqual(result1[2]["COL1"], 3);
+              assert.deepEqual(normalizeRow(result1[0])["COL1"], 1);
+              assert.deepEqual(normalizeRow(result1[1])["COL1"], 2);
+              assert.deepEqual(normalizeRow(result1[2])["COL1"], 3);
               cursor1.fetch((error4, result2) => {
                 assert.deepEqual(error4, null);
                 assert.notDeepEqual(result1, null);
                 assert.deepEqual(cursor1.noData, false);
                 assert.deepEqual(result2.length, 3);
-                assert.deepEqual(result2[0]["COL1"], 4);
-                assert.deepEqual(result2[1]["COL1"], 5);
-                assert.deepEqual(result2[2]["COL1"], 6);
+                assert.deepEqual(normalizeRow(result2[0])["COL1"], 4);
+                assert.deepEqual(normalizeRow(result2[1])["COL1"], 5);
+                assert.deepEqual(normalizeRow(result2[2])["COL1"], 6);
                 cursor2.fetch((error5, result3) => {
                   assert.deepEqual(error5, null);
                   assert.notDeepEqual(result3, null);
                   assert.deepEqual(cursor2.noData, false);
                   assert.deepEqual(result3.length, 3);
-                  assert.deepEqual(result3[0]["COL1"], 1);
-                  assert.deepEqual(result3[1]["COL1"], 2);
-                  assert.deepEqual(result3[2]["COL1"], 3);
+                  assert.deepEqual(normalizeRow(result3[0])["COL1"], 1);
+                  assert.deepEqual(normalizeRow(result3[1])["COL1"], 2);
+                  assert.deepEqual(normalizeRow(result3[2])["COL1"], 3);
                   cursor1.close((error6) => {
                     assert.deepEqual(error6, null);
                     cursor2.fetch((error7, result4) => {
@@ -223,9 +224,9 @@ describe('.fetch([callback])...', () => {
                       assert.notDeepEqual(result4, null);
                       assert.deepEqual(cursor2.noData, false);
                       assert.deepEqual(result4.length, 3);
-                      assert.deepEqual(result4[0]["COL1"], 4);
-                      assert.deepEqual(result4[1]["COL1"], 5);
-                      assert.deepEqual(result4[2]["COL1"], 6);
+                      assert.deepEqual(normalizeRow(result4[0])["COL1"], 4);
+                      assert.deepEqual(normalizeRow(result4[1])["COL1"], 5);
+                      assert.deepEqual(normalizeRow(result4[2])["COL1"], 6);
                       cursor2.close((error8) => {
                         assert.deepEqual(error8, null);
                         done();
@@ -361,15 +362,15 @@ describe('.fetch([callback])...', () => {
       let result = await cursor.fetch();
       assert.notDeepEqual(result, null);
       assert.deepEqual(result.length, 3);
-      assert.deepEqual(result[0]["COL1"], 1);
-      assert.deepEqual(result[1]["COL1"], 2);
-      assert.deepEqual(result[2]["COL1"], 3);
+      assert.deepEqual(normalizeRow(result[0])["COL1"], 1);
+      assert.deepEqual(normalizeRow(result[1])["COL1"], 2);
+      assert.deepEqual(normalizeRow(result[2])["COL1"], 3);
       result = await cursor.fetch();
       assert.notDeepEqual(result, null);
       assert.deepEqual(result.length, 3);
-      assert.deepEqual(result[0]["COL1"], 4);
-      assert.deepEqual(result[1]["COL1"], 5);
-      assert.deepEqual(result[2]["COL1"], 6);
+      assert.deepEqual(normalizeRow(result[0])["COL1"], 4);
+      assert.deepEqual(normalizeRow(result[1])["COL1"], 5);
+      assert.deepEqual(normalizeRow(result[2])["COL1"], 6);
       await cursor.close();
       await connection.close();
     });
@@ -407,31 +408,31 @@ describe('.fetch([callback])...', () => {
       assert.notDeepEqual(result1, null);
       assert.deepEqual(cursor1.noData, false);
       assert.deepEqual(result1.length, 3);
-      assert.deepEqual(result1[0]["COL1"], 1);
-      assert.deepEqual(result1[1]["COL1"], 2);
-      assert.deepEqual(result1[2]["COL1"], 3);
+      assert.deepEqual(normalizeRow(result1[0])["COL1"], 1);
+      assert.deepEqual(normalizeRow(result1[1])["COL1"], 2);
+      assert.deepEqual(normalizeRow(result1[2])["COL1"], 3);
       result1 = await cursor1.fetch();
       assert.notDeepEqual(result1, null);
       assert.deepEqual(cursor1.noData, false);
       assert.deepEqual(result1.length, 3);
-      assert.deepEqual(result1[0]["COL1"], 4);
-      assert.deepEqual(result1[1]["COL1"], 5);
-      assert.deepEqual(result1[2]["COL1"], 6);
+      assert.deepEqual(normalizeRow(result1[0])["COL1"], 4);
+      assert.deepEqual(normalizeRow(result1[1])["COL1"], 5);
+      assert.deepEqual(normalizeRow(result1[2])["COL1"], 6);
       let result2 = await cursor2.fetch();
       assert.notDeepEqual(result2, null);
       assert.deepEqual(cursor2.noData, false);
       assert.deepEqual(result2.length, 3);
-      assert.deepEqual(result2[0]["COL1"], 1);
-      assert.deepEqual(result2[1]["COL1"], 2);
-      assert.deepEqual(result2[2]["COL1"], 3);
+      assert.deepEqual(normalizeRow(result2[0])["COL1"], 1);
+      assert.deepEqual(normalizeRow(result2[1])["COL1"], 2);
+      assert.deepEqual(normalizeRow(result2[2])["COL1"], 3);
       await cursor1.close();
       result2 = await cursor2.fetch();
       assert.notDeepEqual(result2, null);
       assert.deepEqual(cursor2.noData, false);
       assert.deepEqual(result2.length, 3);
-      assert.deepEqual(result2[0]["COL1"], 4);
-      assert.deepEqual(result2[1]["COL1"], 5);
-      assert.deepEqual(result2[2]["COL1"], 6);
+      assert.deepEqual(normalizeRow(result2[0])["COL1"], 4);
+      assert.deepEqual(normalizeRow(result2[1])["COL1"], 5);
+      assert.deepEqual(normalizeRow(result2[2])["COL1"], 6);
       await cursor2.close();
       await connection.close();
 
