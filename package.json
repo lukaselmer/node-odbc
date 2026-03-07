@@ -1,7 +1,7 @@
 {
   "name": "@lukaselmer/odbc",
   "description": "unixodbc bindings for node",
-  "version": "2.5.1",
+  "version": "2.6.0",
   "homepage": "https://github.com/lukaselmer/node-odbc",
   "main": "lib/odbc.js",
   "types": "lib/odbc.d.ts",
