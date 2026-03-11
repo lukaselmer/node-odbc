@@ -1,7 +1,7 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-## [2.7.0] - 2026-03-07
+## [2.7.0]
 ### Changed
 - Replaced `@mapbox/node-pre-gyp` with `prebuildify` + `node-gyp-build` for native addon distribution
 - Prebuilt binaries are now bundled directly in the npm package instead of downloaded from GitHub Releases at install time
