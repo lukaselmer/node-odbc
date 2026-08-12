@@ -105,9 +105,8 @@ describe('...error diagnostics...', () => {
     assertUsableOdbcErrors(caught, 'missing table')
   })
 
-  it('...should return long error messages without mangling them.', async function () {
-    const length = 8000
-    const sql = longErrorQuery(length)
+  it('...should return long error messages in one piece.', async function () {
+    const sql = longErrorQuery(8000)
     if (!sql) return this.skip()
 
     let caught = null
@@ -119,14 +118,27 @@ describe('...error diagnostics...', () => {
     }
     assertUsableOdbcErrors(caught, 'long error message')
 
-    // The server message must survive in one piece rather than being cut into chunks at the
-    // diagnostic buffer size.
-    const combined = caught.odbcErrors.map(odbcError => odbcError.message).join('')
-    const run = combined.match(/a+/g)?.reduce((longest, candidate) =>
-      candidate.length > longest.length ? candidate : longest, '') ?? ''
+    // A long message must not come back as a series of chunks pretending to be separate
+    // diagnostic records.
     assert.strictEqual(
-      run.length, length,
-      `expected an unbroken ${length}-character message, longest run was ${run.length}`,
+      caught.odbcErrors.length, 1,
+      `a single server error must produce a single record, got ${caught.odbcErrors.length}`,
+    )
+
+    // Drivers cap how much of a message they keep (psqlodbc truncates at 4095 characters), so the
+    // exact length is not asserted. What matters is that the message is one unbroken run that is
+    // longer than the initial diagnostic buffer, which only happens when that buffer is grown
+    // correctly.
+    const message = caught.odbcErrors[0].message
+    const longestRun = (message.match(/a+/g) ?? [])
+      .reduce((longest, candidate) => Math.max(longest, candidate.length), 0)
+    assert.ok(
+      longestRun > 2048,
+      `expected a contiguous message longer than the 2048-character initial buffer, got ${longestRun}`,
+    )
+    assert.ok(
+      message.startsWith('ERROR'),
+      `expected the message to start at the beginning, got ${JSON.stringify(message.slice(0, 40))}`,
     )
   })
 
