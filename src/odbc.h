@@ -51,8 +51,25 @@
 
 #define IGNORED_PARAMETER 0
 
+// Upper bounds used while collecting diagnostic records. A driver that reports
+// a nonsensical number of records, or a nonsensical message length, is clamped
+// to these instead of being believed. The message limit cannot exceed the
+// largest value a SQLSMALLINT can carry, because that is the type SQLGetDiagRec
+// takes its BufferLength in.
+#define MAX_DIAGNOSTIC_RECORDS     64
+#define MAX_ERROR_MESSAGE_CHARS    32767
+// Spare room allocated beyond the buffer length advertised to the driver.
+#define MESSAGE_BUFFER_SLACK_CHARS 256
+
+// SQLSTATE is 5 characters plus a NUL terminator. Some drivers write past that;
+// the extra slack keeps such a driver from smashing the surrounding memory, and
+// the value is truncated to the documented 5 characters before it reaches
+// JavaScript.
+#define SQL_STATE_CHARS        6
+#define SQL_STATE_BUFFER_CHARS 32
+
 typedef struct ODBCError {
-  SQLTCHAR state[6];
+  SQLTCHAR state[SQL_STATE_BUFFER_CHARS];
   SQLINTEGER code;
   SQLTCHAR* message;
 } ODBCError;
@@ -354,18 +371,19 @@ class ODBCAsyncWorker : public Napi::AsyncWorker {
 
   public:
   ODBCAsyncWorker(Napi::Function& callback);
-  // ~ODBCAsyncWorker(); // TODO: Delete error stuff
+  ~ODBCAsyncWorker();
 
   protected:
-  ODBCError* errors;
-  SQLINTEGER errorCount = 0;
+      ODBCError* errors = NULL;
+      SQLINTEGER errorCount = 0;
 
-  bool CheckAndHandleErrors(
-    SQLRETURN return_code, SQLSMALLINT handleType, SQLHANDLE handle,
-    const char* message
-  );
-  ODBCError* GetODBCErrors(SQLSMALLINT handleType, SQLHANDLE handle);
-  void OnError(const Napi::Error& e);
+      bool CheckAndHandleErrors(
+        SQLRETURN return_code, SQLSMALLINT handleType, SQLHANDLE handle,
+        const char* message
+      );
+      ODBCError* GetODBCErrors(SQLSMALLINT handleType, SQLHANDLE handle);
+      void FreeODBCErrors();
+      void OnError(const Napi::Error& e);
 };
 
 #endif

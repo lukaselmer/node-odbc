@@ -443,7 +443,10 @@ ODBC::~ODBC() {
 ODBCAsyncWorker::ODBCAsyncWorker(Napi::Function& callback)
   : Napi::AsyncWorker(callback) {};
 
-// TODO: Documentation for this function
+ODBCAsyncWorker::~ODBCAsyncWorker() { FreeODBCErrors(); }
+
+// Converts the collected ODBC diagnostic records into the `odbcErrors` array on
+// the JavaScript Error object, then releases them.
 void ODBCAsyncWorker::OnError(const Napi::Error& e) {
   Napi::Env env = Env();
   Napi::HandleScope scope(env);
@@ -453,7 +456,7 @@ void ODBCAsyncWorker::OnError(const Napi::Error& e) {
   Napi::Array odbcErrors = Napi::Array::New(env);
 
   for (SQLINTEGER i = 0; i < errorCount; i++) {
-    ODBCError odbcError = errors[i];
+    ODBCError& odbcError = errors[i];
     Napi::Object errorObject = Napi::Object::New(env);
 
     errorObject.Set(
@@ -469,24 +472,25 @@ void ODBCAsyncWorker::OnError(const Napi::Error& e) {
       Napi::String::New(env, CODE), Napi::Number::New(env, odbcError.code)
     );
 
+    const SQLTCHAR* message = (odbcError.message != NULL)
+                                ? odbcError.message
+                                : (const SQLTCHAR*)NO_MSG_TEXT;
+
     errorObject.Set(
       Napi::String::New(env, MESSAGE),
 #ifdef UNICODE
-      Napi::String::New(env, (const char16_t*)odbcError.message)
+      Napi::String::New(env, (const char16_t*)message)
 #else
-      Napi::String::New(env, (const char*)odbcError.message)
+      Napi::String::New(env, (const char*)message)
 #endif
     );
 
-    // Error message has been copied off of the C ODBC error stucture, and can
-    // now be deleted
-    if (odbcError.message != NULL) {
-      delete[] odbcError.message;
-      odbcError.message = NULL;
-    }
-
     odbcErrors.Set(i, errorObject);
   }
+
+  // The messages have been copied onto JavaScript strings, so the C structures
+  // can go.
+  FreeODBCErrors();
 
   error.Set(Napi::String::New(env, ODBC_ERRORS), odbcErrors);
 
@@ -496,67 +500,142 @@ void ODBCAsyncWorker::OnError(const Napi::Error& e) {
   Callback().Call(callbackArguments);
 }
 
-// After a SQL Function doesn't pass SQL_SUCCEEDED, the handle type and handle
-// are sent to this function, which gets the information and stores it in an
-// array of ODBCErrors
+// Copies the "no information available" placeholder into a freshly allocated
+// buffer.
+static SQLTCHAR* AllocatePlaceholderMessage() {
+  SQLTCHAR* message = new SQLTCHAR[NO_MSG_TEXT_LENGTH + 1];
+  memcpy(message, NO_MSG_TEXT, NO_MSG_TEXT_SIZE);
+  message[NO_MSG_TEXT_LENGTH] = 0;
+  return message;
+}
+
+// Retrieves the diagnostic records for a handle after a SQL function did not
+// return SQL_SUCCEEDED, and stores them in a newly allocated array of
+// ODBCErrors.
+//
+// This runs after the driver has already reported a failure, so it has to
+// assume the driver may misbehave. In particular it does not trust
+// SQL_DIAG_NUMBER (drivers over-report it), it never reads an output parameter
+// before checking the return code that was supposed to fill it, and it gives
+// the driver a buffer with slack beyond the length it advertises.
 ODBCError*
 ODBCAsyncWorker::GetODBCErrors(SQLSMALLINT handleType, SQLHANDLE handle) {
   SQLRETURN return_code;
-  SQLSMALLINT error_message_length = ERROR_MESSAGE_BUFFER_CHARS;
-  SQLINTEGER statusRecCount;
 
-  return_code = SQLGetDiagField(
-    handleType, handle, 0, SQL_DIAG_NUMBER, &statusRecCount, SQL_IS_INTEGER,
-    NULL
-  );
+  // A worker can hit more than one failure before it reports; drop anything
+  // collected earlier so it does not leak.
+  FreeODBCErrors();
 
-  if (!SQL_SUCCEEDED(return_code)) {
-    ODBCError* odbcErrors = new ODBCError[1];
-    ODBCError error;
+  // SQL_DIAG_NUMBER is deliberately not consulted. Drivers get it wrong in both
+  // directions - psqlodbc reports eight records when only one exists - so the
+  // authoritative answer is to keep asking for records until the driver says
+  // SQL_NO_DATA, bounded by MAX_DIAGNOSTIC_RECORDS in case it never does.
+  ODBCError* odbcErrors = new ODBCError[MAX_DIAGNOSTIC_RECORDS];
+  SQLINTEGER retrieved_record_count = 0;
+
+  for (SQLINTEGER i = 0; i < MAX_DIAGNOSTIC_RECORDS; i++) {
+    ODBCError error = {};
     error.state[0] = NO_STATE_TEXT;
     error.code = 0;
-    error.message = new SQLTCHAR[NO_MSG_TEXT_LENGTH + 1];
-    memcpy(error.message, NO_MSG_TEXT, NO_MSG_TEXT_SIZE + sizeof(SQLTCHAR));
-    odbcErrors[0] = error;
-    return odbcErrors;
-  }
+    error.message = NULL;
 
-  ODBCError* odbcErrors = new ODBCError[statusRecCount];
-  this->errorCount = statusRecCount;
+    // The message length a driver reports is not reliable: the specification
+    // says it is the number of characters available, but drivers such as
+    // psqlodbc report the number of characters they actually copied. A
+    // completely filled buffer is therefore the only dependable sign of
+    // truncation, and the buffer is grown geometrically until the message fits.
+    // Re-reading the same record with a larger buffer returns the message from
+    // the start.
+    SQLINTEGER buffer_length = ERROR_MESSAGE_BUFFER_CHARS;
+    bool retrieved = false;
 
-  for (SQLSMALLINT i = 0; i < statusRecCount; i++) {
-
-    ODBCError error;
-
-    SQLSMALLINT new_error_message_length;
-    return_code = SQL_SUCCESS;
-
-    while (SQL_SUCCEEDED(return_code)) {
-      error.message = new SQLTCHAR[error_message_length];
+    while (true) {
+      // Allocate more than we tell the driver it has, so that a driver ignoring
+      // BufferLength writes into our own slack rather than into unrelated
+      // memory.
+      SQLTCHAR* message =
+        new SQLTCHAR[buffer_length + MESSAGE_BUFFER_SLACK_CHARS]();
+      SQLSMALLINT message_length = 0;
 
       return_code = SQLGetDiagRec(
-        handleType, handle, i + 1, error.state, &error.code, error.message,
-        error_message_length, &new_error_message_length
+        handleType, handle, (SQLSMALLINT)(i + 1), error.state, &error.code,
+        message, (SQLSMALLINT)buffer_length, &message_length
       );
 
-      if (error_message_length > new_error_message_length) {
+      if (!SQL_SUCCEEDED(return_code)) {
+        // SQL_NO_DATA means there is no record i + 1, which is the normal way
+        // out of this loop. Any other failure is treated the same way: stop,
+        // and keep what we already have.
+        delete[] message;
         break;
       }
 
-      delete[] error.message;
-      error_message_length = new_error_message_length + 1;
+      // Only now, with a successful return code, is message_length meaningful.
+      const bool buffer_was_filled =
+        message_length < 0 || (SQLINTEGER)message_length >= buffer_length - 1;
+
+      if (buffer_was_filled && buffer_length < MAX_ERROR_MESSAGE_CHARS) {
+        SQLINTEGER required =
+          (message_length > 0 &&
+           (SQLINTEGER)message_length + 1 > buffer_length * 2)
+            ? (SQLINTEGER)message_length + 1
+            : buffer_length * 2;
+        buffer_length = required > MAX_ERROR_MESSAGE_CHARS
+                          ? MAX_ERROR_MESSAGE_CHARS
+                          : required;
+        delete[] message;
+        continue;
+      }
+
+      // Guarantee termination regardless of what the driver wrote.
+      SQLINTEGER terminator =
+        (message_length >= 0 && message_length < buffer_length)
+          ? message_length
+          : buffer_length - 1;
+      message[terminator] = 0;
+
+      error.message = message;
+      retrieved = true;
+      break;
     }
 
-    if (!SQL_SUCCEEDED(return_code)) {
-      error.state[0] = NO_STATE_TEXT;
-      error.code = 0;
-      memcpy(error.message, NO_MSG_TEXT, NO_MSG_TEXT_SIZE + 1);
+    if (!retrieved) {
+      break;
     }
 
-    odbcErrors[i] = error;
+    // Truncate the SQLSTATE to its documented length in case the driver wrote
+    // more.
+    error.state[SQL_STATE_CHARS - 1] = 0;
+
+    odbcErrors[retrieved_record_count++] = error;
   }
 
+  if (retrieved_record_count == 0) {
+    // The driver reported a failure but will not say why.
+    ODBCError error;
+    error.state[0] = NO_STATE_TEXT;
+    error.code = 0;
+    error.message = AllocatePlaceholderMessage();
+    odbcErrors[0] = error;
+    retrieved_record_count = 1;
+  }
+
+  this->errorCount = retrieved_record_count;
   return odbcErrors;
+}
+
+// Releases the diagnostic records retrieved by GetODBCErrors.
+void ODBCAsyncWorker::FreeODBCErrors() {
+  if (this->errors == NULL) {
+    return;
+  }
+  for (SQLINTEGER i = 0; i < this->errorCount; i++) {
+    delete[] this->errors[i].message;
+    this->errors[i].message = NULL;
+  }
+  delete[] this->errors;
+  this->errors = NULL;
+  this->errorCount = 0;
 }
 
 // TODO: Documentation for this function
