@@ -295,6 +295,16 @@ typedef struct StatementData {
   }
 
   void deleteColumns() {
+    // The column buffers below were handed to the driver with SQLBindCol and
+    // the statement may well be used again (to call a procedure, to read
+    // metadata, or to fetch another result set). Releasing them while the
+    // driver still holds the pointers makes the next execute or fetch write
+    // into freed memory, which corrupts the heap and takes the process down.
+    // Tell the driver to forget them first.
+    if (this->hstmt != SQL_NULL_HANDLE) {
+      SQLFreeStmt(this->hstmt, SQL_UNBIND);
+    }
+
     for (size_t h = 0; h < this->storedRows.size(); h++) {
       delete[] storedRows[h];
     }
