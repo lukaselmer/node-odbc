@@ -113,4 +113,6 @@ describe('Queries...', () => {
       nullable: false
     });
   });
+
+  require('./errors.test.js')
 });
