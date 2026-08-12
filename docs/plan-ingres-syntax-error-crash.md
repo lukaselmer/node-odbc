@@ -68,23 +68,50 @@ Postgres. No client-side SQL validation: that is a workaround, not a fix, and ca
 - Larger, always NUL-terminated SQLSTATE buffer; expose only the first 5 characters.
 - Free the errors array; initialise all members.
 
-## Steps
+## Outcome
 
-1. Prove the abort deterministically (standalone harness under ASan / hostile stack init).
-2. Add `test/queries/errors.test.js` regression tests: invalid SQL rejects with a non-empty
-   `odbcErrors` array, every record carries a real state and message, no phantom records, long
-   (>4 KB) server messages arrive intact, and hundreds of consecutive failing queries neither crash
-   nor leak — across `connection.query`, `pool.query`, the statement API and the callback API.
-3. Rewrite `GetODBCErrors()` per the design above; fix `OnError()` cleanup and the UNICODE
-   termination bug; initialise `errors` / `errorCount`.
-4. Verify: repro before/after plus the full `DBMS=postgres npm test` suite.
-5. CHANGELOG entry and version bump.
+Both defects below are fixed, and the whole test suite now runs clean under AddressSanitizer.
+
+### 1. Diagnostic-record retrieval (the reported crash)
+
+`GetODBCErrors()` was rewritten. Evidence gathered while fixing it, by probing psqlodbc 18 directly:
+
+- `SQL_DIAG_NUMBER` reported **8** records when only **1** existed; record 2 returned `SQL_NO_DATA`
+  and left `TextLengthPtr` untouched at its sentinel value, confirming the uninitialised read.
+- An AddressSanitizer harness reproduced the consequence: `heap-use-after-free`, WRITE of size 33
+  into a freed 2048-byte buffer.
+- Drivers report the number of characters **copied**, not the number available, so a full buffer is
+  now the signal to grow. Re-reading a record with a larger buffer returns the message from the
+  start, so growing is safe.
+
+Result on PostgreSQL, for the same queries:
+
+| query | before | after |
+| --- | --- | --- |
+| 2 000-character error | 4 records (1 real + 3 phantom) | 1 record, complete |
+| 100 000-character error | 8 records, message in 2047-char chunks | 1 record, complete |
+
+### 2. Bound column buffers released without unbinding
+
+Found while running the new tests: `deleteColumns()` freed buffers that were still bound to the
+statement handle, so the driver went on writing into them. `CallProcedureAsyncWorker::Execute()`
+frees the buffers and then executes on the same handle, which AddressSanitizer catches as a
+use-after-free inside the driver. Without the sanitizer the process dies later, in an unrelated
+query, with a corrupted malloc free list - which is what makes this kind of bug look random.
+
+Fixed by issuing `SQLFreeStmt(SQL_UNBIND)` before the buffers are released, which covers every
+caller including the cursor path.
+
+## Verification
+
+- `test/queries/errors.test.js` covers both, and the long-message test fails without the fix.
+- Full PostgreSQL suite: 181 passing, 0 failing, and no AddressSanitizer findings.
 
 ## Out of scope
 
 - **Ingres verification.** The Actian client is Linux-only and not reachable from the dev machine;
-  the fix is driver-agnostic hardening, and a testlab check can follow after release.
+  the fixes are driver-agnostic hardening, and a testlab check can follow after release.
 - **Consumer-side changes.** Once released, `ties-eng-tooling` can drop its "Ingres crashes on
   syntax errors" workaround note and bump the dependency.
-- Upstream `IBM/node-odbc` carries the same bug; offering the patch upstream is a possible
+- Upstream `IBM/node-odbc` carries both bugs; offering the patches upstream is a possible
   follow-up.
