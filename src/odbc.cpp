@@ -612,7 +612,7 @@ ODBCAsyncWorker::GetODBCErrors(SQLSMALLINT handleType, SQLHANDLE handle) {
 
   if (retrieved_record_count == 0) {
     // The driver reported a failure but will not say why.
-    ODBCError error;
+    ODBCError error = {};
     error.state[0] = NO_STATE_TEXT;
     error.code = 0;
     error.message = AllocatePlaceholderMessage();
