@@ -384,16 +384,16 @@ class ODBCAsyncWorker : public Napi::AsyncWorker {
   ~ODBCAsyncWorker();
 
   protected:
-      ODBCError* errors = NULL;
-      SQLINTEGER errorCount = 0;
+  ODBCError* errors = NULL;
+  SQLINTEGER errorCount = 0;
 
-      bool CheckAndHandleErrors(
-        SQLRETURN return_code, SQLSMALLINT handleType, SQLHANDLE handle,
-        const char* message
-      );
-      ODBCError* GetODBCErrors(SQLSMALLINT handleType, SQLHANDLE handle);
-      void FreeODBCErrors();
-      void OnError(const Napi::Error& e);
+  bool CheckAndHandleErrors(
+    SQLRETURN return_code, SQLSMALLINT handleType, SQLHANDLE handle,
+    const char* message
+  );
+  ODBCError* GetODBCErrors(SQLSMALLINT handleType, SQLHANDLE handle);
+  void FreeODBCErrors();
+  void OnError(const Napi::Error& e);
 };
 
 #endif
