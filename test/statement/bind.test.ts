@@ -26,51 +26,51 @@ describe('.bind(parameters, [calback])...', () => {
 
     assert.throws(() => {
       // @ts-expect-error - deliberately wrong signature
-      statement.bind();
+      void statement.bind();
     }, BIND_TYPE_ERROR);
     assert.throws(() => {
       // @ts-expect-error - deliberately wrong signature
-      statement.bind(DUMMY_CALLBACK);
+      void statement.bind(DUMMY_CALLBACK);
     }, BIND_TYPE_ERROR);
     assert.throws(() => {
       // @ts-expect-error - deliberately wrong signature
-      statement.bind(PREPARE_SQL);
+      void statement.bind(PREPARE_SQL);
     }, BIND_TYPE_ERROR);
     assert.throws(() => {
       // @ts-expect-error - deliberately wrong signature
-      statement.bind(PREPARE_SQL, DUMMY_CALLBACK);
+      void statement.bind(PREPARE_SQL, DUMMY_CALLBACK);
     }, BIND_TYPE_ERROR);
     assert.throws(() => {
       // @ts-expect-error - deliberately wrong signature
-      statement.bind(1);
+      void statement.bind(1);
     }, BIND_TYPE_ERROR);
     assert.throws(() => {
       // @ts-expect-error - deliberately wrong signature
-      statement.bind(1, DUMMY_CALLBACK);
+      void statement.bind(1, DUMMY_CALLBACK);
     }, BIND_TYPE_ERROR);
     assert.throws(() => {
       // @ts-expect-error - deliberately wrong signature
-      statement.bind(null);
+      void statement.bind(null);
     }, BIND_TYPE_ERROR);
     assert.throws(() => {
       // @ts-expect-error - deliberately wrong signature
-      statement.bind(null, DUMMY_CALLBACK);
+      void statement.bind(null, DUMMY_CALLBACK);
     }, BIND_TYPE_ERROR);
     assert.throws(() => {
       // @ts-expect-error - deliberately wrong signature
-      statement.bind();
+      void statement.bind();
     }, BIND_TYPE_ERROR);
     assert.throws(() => {
       // @ts-expect-error - deliberately wrong signature
-      statement.bind(undefined, DUMMY_CALLBACK);
+      void statement.bind(undefined, DUMMY_CALLBACK);
     }, BIND_TYPE_ERROR);
     assert.throws(() => {
       // @ts-expect-error - deliberately wrong signature
-      statement.bind({});
+      void statement.bind({});
     }, BIND_TYPE_ERROR);
     assert.throws(() => {
       // @ts-expect-error - deliberately wrong signature
-      statement.bind({}, DUMMY_CALLBACK);
+      void statement.bind({}, DUMMY_CALLBACK);
     }, BIND_TYPE_ERROR);
 
     // await connection.close();

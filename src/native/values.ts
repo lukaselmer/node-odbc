@@ -50,8 +50,5 @@ function isTaggedBinary(value: Record<string, unknown>): value is TaggedBinary {
 
 function arrayBufferOf(base64: string): ArrayBuffer {
   const buffer = Buffer.from(base64, 'base64');
-  return buffer.buffer.slice(
-    buffer.byteOffset,
-    buffer.byteOffset + buffer.byteLength,
-  ) as ArrayBuffer;
+  return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
 }

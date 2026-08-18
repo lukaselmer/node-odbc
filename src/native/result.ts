@@ -21,7 +21,9 @@ interface ResultContext {
   parameters?: unknown[] | undefined;
 }
 
+// Not `??`: an explicit null has to survive, only undefined falls back.
 function provided<T>(value: T | undefined, fallback: T): T {
+  // oxlint-disable-next-line typescript/prefer-nullish-coalescing
   return value === undefined ? fallback : value;
 }
 

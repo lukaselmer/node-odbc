@@ -29,19 +29,19 @@ describe('.execute([calback])...', () => {
 
     assert.throws(() => {
       // @ts-expect-error - deliberately wrong signature
-      statement.execute(PREPARE_SQL);
+      void statement.execute(PREPARE_SQL);
     }, EXECUTE_TYPE_ERROR);
     assert.throws(() => {
       // @ts-expect-error - deliberately wrong signature
-      statement.execute(PREPARE_SQL, DUMMY_CALLBACK);
+      void statement.execute(PREPARE_SQL, DUMMY_CALLBACK);
     }, EXECUTE_TYPE_ERROR);
     assert.throws(() => {
       // @ts-expect-error - deliberately wrong signature
-      statement.execute(1);
+      void statement.execute(1);
     }, EXECUTE_TYPE_ERROR);
     assert.throws(() => {
       // @ts-expect-error - deliberately wrong signature
-      statement.execute(1, DUMMY_CALLBACK);
+      void statement.execute(1, DUMMY_CALLBACK);
     }, EXECUTE_TYPE_ERROR);
   });
   describe('...with promises...', () => {

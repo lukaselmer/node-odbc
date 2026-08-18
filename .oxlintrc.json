@@ -13,7 +13,11 @@
     "no-inline-comments": "off",
     "max-lines": "off",
     "max-lines-per-function": "off",
-    "max-statements": "off"
+    "max-statements": "off",
+    "typescript/prefer-readonly-parameter-types": "off",
+    "typescript/no-unnecessary-type-parameters": "off",
+    "typescript/consistent-return": "off",
+    "typescript/no-unsafe-type-assertion": "off"
   },
   "ignorePatterns": ["dist/**", "bin/**", "go/**", "node_modules/**", "test/ingres/*.js"],
   "overrides": [
@@ -23,6 +27,14 @@
         "no-await-in-loop": "off",
         "unicorn/consistent-function-scoping": "off",
         "unicorn/prefer-top-level-await": "off"
+      }
+    },
+    {
+      "files": ["test/**/*.ts"],
+      "rules": {
+        "typescript/no-unsafe-type-assertion": "off",
+        "typescript/strict-boolean-expressions": "off",
+        "typescript/no-confusing-void-expression": "off"
       }
     }
   ]

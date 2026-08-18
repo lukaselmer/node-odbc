@@ -16,7 +16,9 @@ export interface OdbcError extends Error {
 }
 
 interface PendingRequest {
-  resolve: (value: never) => void;
+  // The map holds resolvers for differently typed requests, so the value type
+  // is erased here and restored by the caller's type argument.
+  resolve: (value: unknown) => void;
   reject: (reason: Error) => void;
 }
 
@@ -47,7 +49,7 @@ export class SidecarClient {
   private send<T>(message: Omit<Parameters<SidecarClient['frame']>[0], 'id'>): Promise<T> {
     return new Promise<T>((resolve, reject) => {
       const id = this.nextId++;
-      this.pending.set(id, { resolve: resolve as (value: never) => void, reject });
+      this.pending.set(id, { resolve: resolve as (value: unknown) => void, reject });
       this.refSocket();
       this.socket?.write(this.frame({ id, ...message }));
     });
@@ -76,10 +78,12 @@ export class SidecarClient {
     unrefStream(this.child.stdout);
 
     this.socket = await connectSocket(socketPath);
-    this.socket.on('data', (chunk: Buffer) => this.consume(chunk));
-    this.socket.on('close', () =>
-      this.failAllPending(new Error('[odbc] The ODBC server exited unexpectedly')),
-    );
+    this.socket.on('data', (chunk: Buffer) => {
+      this.consume(chunk);
+    });
+    this.socket.on('close', () => {
+      this.failAllPending(new Error('[odbc] The ODBC server exited unexpectedly'));
+    });
     this.socket.unref();
   }
 
@@ -92,7 +96,7 @@ export class SidecarClient {
 
       const payload = this.buffer.subarray(HEADER_BYTES, HEADER_BYTES + size);
       this.buffer = this.buffer.subarray(HEADER_BYTES + size);
-      this.settle(JSON.parse(payload.toString('utf8')) as WireResponse);
+      this.settle(parseResponse(payload));
     }
   }
 
@@ -106,7 +110,7 @@ export class SidecarClient {
     if (response.error) {
       waiter.reject(toOdbcError(response.error));
     } else {
-      waiter.resolve(response.result as never);
+      waiter.resolve(response.result);
     }
   }
 
@@ -141,6 +145,10 @@ export class SidecarClient {
   }
 }
 
+function parseResponse(payload: Buffer): WireResponse {
+  return JSON.parse(payload.toString('utf8')) as WireResponse;
+}
+
 function waitForReady(child: ChildProcess): Promise<void> {
   return new Promise((resolve, reject) => {
     let output = '';
@@ -149,9 +157,9 @@ function waitForReady(child: ChildProcess): Promise<void> {
       if (output.includes('ready')) resolve();
     });
     child.on('error', reject);
-    child.on('exit', (code) =>
-      reject(new Error(`[odbc] The ODBC server exited with code ${String(code)}`)),
-    );
+    child.on('exit', (code) => {
+      reject(new Error(`[odbc] The ODBC server exited with code ${String(code)}`));
+    });
   });
 }
 
@@ -164,7 +172,9 @@ function unrefStream(stream: unknown): void {
 function connectSocket(socketPath: string): Promise<net.Socket> {
   return new Promise((resolve, reject) => {
     const socket = net.createConnection(socketPath);
-    socket.once('connect', () => resolve(socket));
+    socket.once('connect', () => {
+      resolve(socket);
+    });
     socket.once('error', reject);
   });
 }

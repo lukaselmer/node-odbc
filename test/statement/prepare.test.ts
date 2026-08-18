@@ -16,43 +16,43 @@ describe('.prepare(sql, [calback])...', () => {
 
     assert.throws(() => {
       // @ts-expect-error - deliberately wrong signature
-      statement.prepare();
+      void statement.prepare();
     }, PREPARE_TYPE_ERROR);
     assert.throws(() => {
       // @ts-expect-error - deliberately wrong signature
-      statement.prepare(DUMMY_CALLBACK);
+      void statement.prepare(DUMMY_CALLBACK);
     }, PREPARE_TYPE_ERROR);
     assert.throws(() => {
       // @ts-expect-error - deliberately wrong signature
-      statement.prepare(1);
+      void statement.prepare(1);
     }, PREPARE_TYPE_ERROR);
     assert.throws(() => {
       // @ts-expect-error - deliberately wrong signature
-      statement.prepare(1, DUMMY_CALLBACK);
+      void statement.prepare(1, DUMMY_CALLBACK);
     }, PREPARE_TYPE_ERROR);
     assert.throws(() => {
       // @ts-expect-error - deliberately wrong signature
-      statement.prepare(null);
+      void statement.prepare(null);
     }, PREPARE_TYPE_ERROR);
     assert.throws(() => {
       // @ts-expect-error - deliberately wrong signature
-      statement.prepare(null, DUMMY_CALLBACK);
+      void statement.prepare(null, DUMMY_CALLBACK);
     }, PREPARE_TYPE_ERROR);
     assert.throws(() => {
       // @ts-expect-error - deliberately wrong signature
-      statement.prepare();
+      void statement.prepare();
     }, PREPARE_TYPE_ERROR);
     assert.throws(() => {
       // @ts-expect-error - deliberately wrong signature
-      statement.prepare(undefined, DUMMY_CALLBACK);
+      void statement.prepare(undefined, DUMMY_CALLBACK);
     }, PREPARE_TYPE_ERROR);
     assert.throws(() => {
       // @ts-expect-error - deliberately wrong signature
-      statement.prepare({});
+      void statement.prepare({});
     }, PREPARE_TYPE_ERROR);
     assert.throws(() => {
       // @ts-expect-error - deliberately wrong signature
-      statement.prepare({}, DUMMY_CALLBACK);
+      void statement.prepare({}, DUMMY_CALLBACK);
     }, PREPARE_TYPE_ERROR);
 
     // await connection.close();

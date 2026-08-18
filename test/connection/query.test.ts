@@ -16,27 +16,27 @@ describe('.query(sql, [parameters], [options])...', () => {
     const connection = await odbc.connect(`${process.env['CONNECTION_STRING']}`);
     assert.throws(() => {
       // @ts-expect-error - deliberately wrong signature
-      connection.query();
+      void connection.query();
     }, QUERY_TYPE_ERROR);
     assert.throws(() => {
       // @ts-expect-error - deliberately wrong signature
-      connection.query(QUERY_CALLBACK);
+      void connection.query(QUERY_CALLBACK);
     }, QUERY_TYPE_ERROR);
     assert.throws(() => {
       // @ts-expect-error - deliberately wrong signature
-      connection.query(1, []);
+      void connection.query(1, []);
     }, QUERY_TYPE_ERROR);
     assert.throws(() => {
       // @ts-expect-error - deliberately wrong signature
-      connection.query(1, [], QUERY_CALLBACK);
+      void connection.query(1, [], QUERY_CALLBACK);
     }, QUERY_TYPE_ERROR);
     assert.throws(() => {
       // @ts-expect-error - deliberately wrong signature
-      connection.query(1, 1);
+      void connection.query(1, 1);
     }, QUERY_TYPE_ERROR);
     assert.throws(() => {
       // @ts-expect-error - deliberately wrong signature
-      connection.query(1, 1, QUERY_CALLBACK);
+      void connection.query(1, 1, QUERY_CALLBACK);
     }, QUERY_TYPE_ERROR);
     await connection.close();
   });
