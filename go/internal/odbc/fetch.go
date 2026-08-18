@@ -120,7 +120,7 @@ func (s *statement) hasLongData() bool {
 // readRow builds one row, either as an object keyed by column name or, when
 // fetchArray is set, as a positional array.
 func (s *statement) readRow(row int) (any, error) {
-	if s.connection.FetchArray() {
+	if s.connection.FetchArray() || s.arrayRows {
 		values := make([]any, len(s.columns))
 		for index := range s.columns {
 			value, err := s.readColumn(index, row)

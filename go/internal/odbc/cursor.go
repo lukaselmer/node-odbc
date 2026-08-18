@@ -1,13 +1,22 @@
 package odbc
 
 // Cursor hands a result set back in batches instead of materialising all of it.
+//
+// A cursor opened by a query owns its statement, while one opened by a
+// prepared statement only borrows it: closing that cursor has to leave the
+// statement ready to execute again.
 type Cursor struct {
-	statement  *statement
-	parameters []any
+	statement     *statement
+	parameters    []any
+	ownsStatement bool
 }
 
-func newCursor(statement *statement) *Cursor {
-	return &Cursor{statement: statement}
+func newOwningCursor(statement *statement) *Cursor {
+	return &Cursor{statement: statement, ownsStatement: true}
+}
+
+func newBorrowingCursor(statement *statement, parameters []any) *Cursor {
+	return &Cursor{statement: statement, parameters: parameters}
 }
 
 func (c *Cursor) NoData() bool { return c.statement.noData }
@@ -26,10 +35,11 @@ func (c *Cursor) Fetch() (*Result, error) {
 }
 
 func (c *Cursor) Close() error {
-	if err := c.statement.closeCursor(); err != nil {
+	err := c.statement.closeCursor()
+	if c.ownsStatement {
 		c.statement.free()
-		return err
+	} else {
+		c.statement.releaseBuffers()
 	}
-	c.statement.free()
-	return nil
+	return err
 }

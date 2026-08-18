@@ -11,6 +11,7 @@ import (
 // repeatedly with different parameters.
 type Statement struct {
 	statement      *statement
+	prepared       bool
 	parameterCount int
 	boundValues    []any
 }
@@ -42,11 +43,12 @@ func (s *Statement) Prepare(sql string) error {
 		)
 	}
 	s.parameterCount = count
+	s.prepared = true
 	return nil
 }
 
 func (s *Statement) Bind(values []any) error {
-	if len(values) != s.parameterCount {
+	if !s.prepared || len(values) != s.parameterCount {
 		return newErrorWithoutDiagnostics(parameterCountMismatchMessage(s.parameterCount, len(values)))
 	}
 
@@ -67,6 +69,8 @@ func parameterCountMismatchMessage(expected, actual int) string {
 func (s *Statement) Execute(options QueryOptions) (*Result, *Cursor, error) {
 	s.statement.options = options
 	s.statement.fetchSize = effectiveFetchSize(options)
+	s.statement.releaseBuffers()
+	s.statement.noData = false
 
 	if err := s.statement.applyTimeout(); err != nil {
 		return nil, nil, err
@@ -82,9 +86,7 @@ func (s *Statement) Execute(options QueryOptions) (*Result, *Cursor, error) {
 	}
 
 	if options.UseCursor {
-		cursor := newCursor(s.statement)
-		cursor.parameters = s.boundValues
-		return nil, cursor, nil
+		return nil, newBorrowingCursor(s.statement, s.boundValues), nil
 	}
 
 	rows, err := s.statement.fetchAll()
@@ -110,7 +112,10 @@ func (s *Statement) Close() error {
 	if s.statement.handle == nil {
 		return nil
 	}
+	handleMutex.Lock()
 	ret := api.SQLFreeHandle(odbcapi.SQLHandleStmt, api.SQLHANDLE(s.statement.handle))
+	handleMutex.Unlock()
+
 	if !odbcapi.Succeeded(int16(ret)) {
 		return s.statement.newError("[odbc] Error closing the Statement")
 	}
@@ -118,4 +123,3 @@ func (s *Statement) Close() error {
 	s.statement.free()
 	return nil
 }
-

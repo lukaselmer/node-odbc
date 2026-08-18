@@ -6,5 +6,4 @@ core*
 *.env
 .vscode
 build*/
-lib/bindings
-prebuilds
+bin/

@@ -11,6 +11,9 @@ type Environment struct {
 }
 
 func NewEnvironment() (*Environment, error) {
+	handleMutex.Lock()
+	defer handleMutex.Unlock()
+
 	var handle api.SQLHANDLE
 	ret := api.SQLAllocHandle(odbcapi.SQLHandleEnv, nil, &handle)
 	if !odbcapi.Succeeded(int16(ret)) {
@@ -29,6 +32,10 @@ func (e *Environment) Close() {
 	if e.handle == nil {
 		return
 	}
+
+	handleMutex.Lock()
+	defer handleMutex.Unlock()
+
 	api.SQLFreeHandle(odbcapi.SQLHandleEnv, api.SQLHANDLE(e.handle))
 	e.handle = nil
 }

@@ -43,18 +43,23 @@ type statement struct {
 	rowCount      int64
 	rowsFetched   unsafe.Pointer
 	rowStatus     unsafe.Pointer
+	arrayRows     bool
 	noData        bool
 }
 
 func newStatement(connection *Connection, options QueryOptions) (*statement, error) {
+	var handle api.SQLHANDLE
+
 	if connection.handle == nil {
 		return nil, newErrorWithoutDiagnostics(
 			"[odbc] Database connection handle was no longer valid. Cannot run a query after closing the connection.",
 		)
 	}
 
-	var handle api.SQLHANDLE
+	handleMutex.Lock()
 	ret := api.SQLAllocHandle(odbcapi.SQLHandleStmt, api.SQLHANDLE(connection.handle), &handle)
+	handleMutex.Unlock()
+
 	if !odbcapi.Succeeded(int16(ret)) {
 		return nil, newError(
 			"[odbc] Error allocating a handle to run the SQL statement",
@@ -121,7 +126,7 @@ func (s *statement) runQuery(parameters []any) (*Result, *Cursor, error) {
 	}
 
 	if s.options.UseCursor {
-		return nil, newCursor(s), nil
+		return nil, newOwningCursor(s), nil
 	}
 
 	rows, err := s.fetchAll()
@@ -312,11 +317,23 @@ func (s *statement) cancel() error {
 	return nil
 }
 
-func (s *statement) free() {
+// releaseBuffers drops everything tied to one execution while keeping the
+// statement handle, so that a prepared statement can be executed again.
+func (s *statement) releaseBuffers() {
 	for index := range s.bindings {
 		s.bindings[index].free()
 	}
 	s.bindings = nil
+	s.columns = nil
+
+	if s.rowStatus != nil {
+		odbcapi.Free(s.rowStatus)
+		s.rowStatus = nil
+	}
+}
+
+func (s *statement) free() {
+	s.releaseBuffers()
 
 	for _, parameter := range s.parameters {
 		parameter.free()
@@ -327,12 +344,10 @@ func (s *statement) free() {
 		odbcapi.Free(s.rowsFetched)
 		s.rowsFetched = nil
 	}
-	if s.rowStatus != nil {
-		odbcapi.Free(s.rowStatus)
-		s.rowStatus = nil
-	}
 	if s.handle != nil {
+		handleMutex.Lock()
 		api.SQLFreeHandle(odbcapi.SQLHandleStmt, api.SQLHANDLE(s.handle))
+		handleMutex.Unlock()
 		s.handle = nil
 	}
 }

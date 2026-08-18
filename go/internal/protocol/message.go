@@ -23,18 +23,9 @@ type Request struct {
 }
 
 type Response struct {
-	ID     uint64          `json:"id"`
-	Result any             `json:"result"`
-	Error  *Error          `json:"error,omitempty"`
-	Events []Event         `json:"events,omitempty"`
-}
-
-// Event carries state that the JS side exposes through synchronous getters and
-// therefore has to mirror locally.
-type Event struct {
-	Handle string `json:"handle"`
-	Name   string `json:"name"`
-	Value  any    `json:"value"`
+	ID     uint64 `json:"id"`
+	Result any    `json:"result"`
+	Error  *Error `json:"error,omitempty"`
 }
 
 type Error struct {

@@ -39,6 +39,20 @@ type getDataExtensions struct {
 const defaultMaxColumnNameLength = 128
 
 func Connect(environment *Environment, options ConnectionOptions) (*Connection, error) {
+	connection, err := establishConnection(environment, options)
+	if err != nil {
+		return nil, err
+	}
+
+	connection.connected = true
+	connection.info = connection.readInfo()
+	return connection, nil
+}
+
+func establishConnection(environment *Environment, options ConnectionOptions) (*Connection, error) {
+	handleMutex.Lock()
+	defer handleMutex.Unlock()
+
 	handle, err := allocateConnectionHandle(environment)
 	if err != nil {
 		return nil, err
@@ -53,9 +67,6 @@ func Connect(environment *Environment, options ConnectionOptions) (*Connection, 
 		connection.freeHandle()
 		return nil, err
 	}
-
-	connection.connected = true
-	connection.info = connection.readInfo()
 	return connection, nil
 }
 
@@ -160,6 +171,9 @@ func (c *Connection) Close() error {
 		c.connected = false
 		return nil
 	}
+
+	handleMutex.Lock()
+	defer handleMutex.Unlock()
 
 	if ret := api.SQLEndTran(odbcapi.SQLHandleDbc, api.SQLHANDLE(c.handle), odbcapi.SQLRollback); !odbcapi.Succeeded(int16(ret)) {
 		return c.newError("[odbc] Error ending potential transactions when closing the connection")
