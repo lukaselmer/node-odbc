@@ -60,6 +60,9 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           registry-url: 'https://registry.npmjs.org'
           cache: npm
+      - name: Upgrade npm
+        # Publishing without a token needs the OIDC support in npm 11.5.1+.
+        run: npm install -g npm@latest
       - name: Install npm dependencies
         run: npm ci
       - name: Collect the sidecar binaries
@@ -96,7 +99,10 @@ jobs:
         with:
           name: ${{ steps.package-version.outputs.version }}
           generate_release_notes: true
+          prerelease: ${{ steps.package-tag.outputs.tag != 'latest' }}
       - name: Publish to npm
-        run: npm publish --access public --tag "$NPM_TAG"
+        # Authenticated through OIDC: the package is configured on npm with
+        # this repository and workflow as a trusted publisher.
+        run: npm publish --access public --provenance --tag "$NPM_TAG"
         env:
           NPM_TAG: ${{ steps.package-tag.outputs.tag }}
