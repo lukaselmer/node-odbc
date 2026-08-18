@@ -115,11 +115,22 @@ second C++ failure is a flaky prepared-statement test.
 
 ### Ingres
 
-The Actian ODBC client only ships for Linux x86_64, so `test/ingres/run.sh` builds a container with
-the client and the sidecar and runs `test/ingres/smoke.js` against a real Ingres server. Besides the
-usual queries it asserts the case that motivated this port: a syntax error must surface as a
-rejected promise carrying `odbcErrors`, and the connection must stay usable afterwards, rather than
-aborting the process.
+The Actian ODBC client only ships for Linux x86_64, so the Ingres checks run in a container:
+
+- `test/ingres/run.sh` builds an image with the Actian client and the sidecar. Use it to check that
+  the driver loads and that connection errors surface correctly; it does not configure a vnode, so
+  it cannot open an authenticated session.
+- `test/ingres/runInPod.sh <pod>` runs `test/ingres/smoke.js` inside a running `<app>`
+  pod, which already has a configured client and a resolvable vnode. Same image, same driver, same
+  database as production.
+
+Against the the test environment database (`<database>`) every check passes: connect, simple and parameterised
+queries, transactions, and a catalog query returning 1238 tables. The interesting one is the failure
+path that motivated this port — a syntax error arrives as a rejected promise carrying
+`odbcErrors: [{ state: "42000" }]`, and the connection is still usable afterwards.
+
+Run against the same database and driver, the C++ addon and the Go sidecar produce the same message,
+the same SQLSTATE and the same recovery.
 
 ### Unit tests
 
