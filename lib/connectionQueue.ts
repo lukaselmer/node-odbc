@@ -6,32 +6,32 @@
  * one round trip per connection; see docs/rustPort.md.
  */
 
-const DEFAULT_MAX_ACTIVELY_CONNECTING = 1;
+const DEFAULT_MAX_ACTIVELY_CONNECTING = 1
 
-const queued: (() => Promise<void>)[] = [];
-let activelyConnecting = 0;
-let maxActivelyConnecting = DEFAULT_MAX_ACTIVELY_CONNECTING;
+const queued: (() => Promise<void>)[] = []
+let activelyConnecting = 0
+let maxActivelyConnecting = DEFAULT_MAX_ACTIVELY_CONNECTING
 
 export function enqueueConnect(open: () => Promise<void>): void {
-  queued.push(open);
-  void drain();
+  queued.push(open)
+  void drain()
 }
 
 export function setMaxActivelyConnecting(count: number): void {
-  maxActivelyConnecting = count;
+  maxActivelyConnecting = count
 }
 
 async function drain(): Promise<void> {
-  if (activelyConnecting >= maxActivelyConnecting) return;
+  if (activelyConnecting >= maxActivelyConnecting) return
 
-  const open = queued.shift();
-  if (!open) return;
+  const open = queued.shift()
+  if (!open) return
 
-  activelyConnecting++;
+  activelyConnecting++
   try {
-    await open();
+    await open()
   } finally {
-    activelyConnecting--;
-    void drain();
+    activelyConnecting--
+    void drain()
   }
 }

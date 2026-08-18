@@ -40,8 +40,8 @@ container — `rustc` segfaults under qemu on an Apple Silicon host.
 Two things that cost an afternoon each:
 
 - When packing the result on macOS, set `COPYFILE_DISABLE=1`. Otherwise `tar` writes an
-  AppleDouble `._odbc.node` beside the real one, and `node-gyp-build` loads that 163-byte
-  stub instead of the addon, which fails in `dlopen` with no useful message.
+  AppleDouble `._odbc.node` beside the real one, which fails in `dlopen` with no useful
+  message if anything picks it up.
 - The Actian client refuses to start as root, so run it as an ordinary user.
 
 If you work at Siemens, the test database, its network policy and the container image used to

@@ -133,8 +133,9 @@ Beyond the removals, two C++ defects are not reproduced:
 
 ## Distribution
 
-`prebuildify` + `node-gyp-build` are replaced by `napi build`; the artefact still lands in
-`prebuilds/{platform}-{arch}/`, so how `lib/odbc.js` loads the addon is unchanged.
+`prebuildify` + `node-gyp-build` are replaced by `napi build` and a direct load in
+`lib/native.ts`, so the package has no runtime dependencies. The artefact still lands in
+`prebuilds/{platform}-{arch}/odbc.node`, the one path the loader looks at.
 
 Linux x86_64 is cross-compiled from any host with `npm run build:linux-x64`, which uses
 `cargo-zigbuild` and fetches a Linux `libodbc` for the linker to resolve against — the real
@@ -205,7 +206,7 @@ expose — its high-level `Connection` yields the handle only through a consumin
 It is replaced by a pool option, because Ingres accepts the setting as ordinary SQL:
 
 ```js
-pool({ connectionString, initialStatements: ["SET SESSION ISOLATION LEVEL READ COMMITTED"] });
+pool({ connectionString, initialStatements: ['SET SESSION ISOLATION LEVEL READ COMMITTED'] })
 ```
 
 The statements run on each newly opened session, before it is handed out. That timing is

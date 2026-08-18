@@ -229,23 +229,23 @@ In order to get a connection, you must use the `.connect` function exported from
 **Promises**
 
 ```javascript
-const odbc = require("@lukaselmer/odbc");
+const odbc = require('@lukaselmer/odbc')
 
 async function connectToDatabase() {
-  const connection1 = await odbc.connect("DSN=MYDSN");
+  const connection1 = await odbc.connect('DSN=MYDSN')
   // connection1 is now an open Connection
 
   // or using a configuration object
   const connectionConfig = {
-    connectionString: "DSN=MYDSN",
+    connectionString: 'DSN=MYDSN',
     connectionTimeout: 10,
     loginTimeout: 10,
-  };
-  const connection2 = await odbc.connect(connectionConfig);
+  }
+  const connection2 = await odbc.connect(connectionConfig)
   // connection2 is now an open Connection
 }
 
-connectToDatabase();
+connectToDatabase()
 ```
 
 Once a Connection has been created with `odbc.connect`, you can use the following functions on the connection:
@@ -284,16 +284,16 @@ Returns a [Statement](#Statement) object from the connection.
 **Promises**
 
 ```javascript
-const odbc = require("@lukaselmer/odbc");
+const odbc = require('@lukaselmer/odbc')
 
 // can only use await keyword in an async function
 async function statementExample() {
-  const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`);
-  const statement = await connection.createStatement();
+  const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`)
+  const statement = await connection.createStatement()
   // now have a statement where sql can be prepared, bound, and executed
 }
 
-statementExample();
+statementExample()
 ```
 
 ---
@@ -314,15 +314,15 @@ Returns a [result array](#result-array) listing the tables that match the given 
 **Promises**
 
 ```javascript
-const odbc = require("@lukaselmer/odbc");
+const odbc = require('@lukaselmer/odbc')
 
 async function tablesExample() {
-  const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`);
-  const tables = await connection.tables(null, "MY_SCHEMA", null, null);
-  console.log(tables);
+  const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`)
+  const tables = await connection.tables(null, 'MY_SCHEMA', null, null)
+  console.log(tables)
 }
 
-tablesExample();
+tablesExample()
 ```
 
 ---
@@ -343,15 +343,15 @@ Returns a [result array](#result-array) listing the columns that match the given
 **Promises**
 
 ```javascript
-const odbc = require("@lukaselmer/odbc");
+const odbc = require('@lukaselmer/odbc')
 
 async function columnsExample() {
-  const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`);
-  const columns = await connection.columns(null, "MY_SCHEMA", "MY_TABLE", null);
-  console.log(columns);
+  const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`)
+  const columns = await connection.columns(null, 'MY_SCHEMA', 'MY_TABLE', null)
+  console.log(columns)
 }
 
-columnsExample();
+columnsExample()
 ```
 
 ---
@@ -365,16 +365,16 @@ Begins a transaction on the connection. The transaction can be committed by call
 **Promises**
 
 ```javascript
-const odbc = require("@lukaselmer/odbc");
+const odbc = require('@lukaselmer/odbc')
 
 // can only use await keyword in an async function
 async function transaction() {
-  const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`);
-  await connection.beginTransaction();
+  const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`)
+  await connection.beginTransaction()
   // transaction is now open
 }
 
-transaction();
+transaction()
 ```
 
 ---
@@ -388,18 +388,18 @@ Commits an open transaction. If called on a connection that doesn't have an open
 **Promises**
 
 ```javascript
-const odbc = require("@lukaselmer/odbc");
+const odbc = require('@lukaselmer/odbc')
 
 // can only use await keyword in an async function
 async function commitTransaction() {
-  const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`);
-  await connection.beginTransaction();
-  const insertResult = await connection.query("INSERT INTO MY_TABLE VALUES(1, 'Name')");
-  await connection.commit();
+  const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`)
+  await connection.beginTransaction()
+  const insertResult = await connection.query("INSERT INTO MY_TABLE VALUES(1, 'Name')")
+  await connection.commit()
   // INSERT query has now been committed
 }
 
-commitTransaction();
+commitTransaction()
 ```
 
 ---
@@ -413,18 +413,18 @@ Rolls back an open transaction. If called on a connection that doesn't have an o
 **Promises**
 
 ```javascript
-const odbc = require("@lukaselmer/odbc");
+const odbc = require('@lukaselmer/odbc')
 
 // can only use await keyword in an async function
 async function rollbackTransaction() {
-  const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`);
-  await connection.beginTransaction();
-  const insertResult = await connection.query("INSERT INTO MY_TABLE VALUES(1, 'Name')");
-  await connection.rollback();
+  const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`)
+  await connection.beginTransaction()
+  const insertResult = await connection.query("INSERT INTO MY_TABLE VALUES(1, 'Name')")
+  await connection.rollback()
   // INSERT query has now been rolled back
 }
 
-rollbackTransaction();
+rollbackTransaction()
 ```
 
 ---
@@ -438,16 +438,16 @@ Closes an open connection. Any transactions on the connection that have not been
 **Promises**
 
 ```javascript
-const odbc = require("@lukaselmer/odbc");
+const odbc = require('@lukaselmer/odbc')
 
 // can only use await keyword in an async function
 async function closeConnection() {
-  const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`);
+  const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`)
   // do something with your connection here
-  await connection.close();
+  await connection.close()
 }
 
-closeConnection();
+closeConnection()
 ```
 
 ---
@@ -459,16 +459,16 @@ A synchronous boolean getter reporting whether the driver still considers the co
 #### Examples:
 
 ```javascript
-const odbc = require("@lukaselmer/odbc");
+const odbc = require('@lukaselmer/odbc')
 
 async function checkConnection() {
-  const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`);
-  console.log(connection.connected); // true
-  await connection.close();
-  console.log(connection.connected); // false
+  const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`)
+  console.log(connection.connected) // true
+  await connection.close()
+  console.log(connection.connected) // false
 }
 
-checkConnection();
+checkConnection()
 ```
 
 ---
@@ -521,16 +521,16 @@ Returns a [Connection](#connection) object for you to use from the Pool. Doesn't
 **Promises**
 
 ```javascript
-const odbc = require("@lukaselmer/odbc");
+const odbc = require('@lukaselmer/odbc')
 
 // can only use await keyword in an async function
 async function connectExample() {
-  const pool = await odbc.pool(`${process.env.CONNECTION_STRING}`);
-  const connection = await pool.connect();
+  const pool = await odbc.pool(`${process.env.CONNECTION_STRING}`)
+  const connection = await pool.connect()
   // now have a Connection to do work with
 }
 
-connectExample();
+connectExample()
 ```
 
 ---
@@ -549,16 +549,16 @@ Utility function to execute a query on any open connection in the pool. Will get
 **Promises**
 
 ```javascript
-const odbc = require("@lukaselmer/odbc");
+const odbc = require('@lukaselmer/odbc')
 
 // can only use await keyword in an async function
 async function queryExample() {
-  const pool = await odbc.pool(`${process.env.CONNECTION_STRING}`);
-  const result = await pool.query("SELECT * FROM MY_TABLE");
-  console.log(result);
+  const pool = await odbc.pool(`${process.env.CONNECTION_STRING}`)
+  const result = await pool.query('SELECT * FROM MY_TABLE')
+  console.log(result)
 }
 
-queryExample();
+queryExample()
 ```
 
 ---
@@ -572,16 +572,16 @@ Closes the entire pool of currently unused connections. Will not close connectio
 **Promises**
 
 ```javascript
-const odbc = require("@lukaselmer/odbc");
+const odbc = require('@lukaselmer/odbc')
 
 // can only use await keyword in an async function
 async function closeExample() {
-  const pool = await odbc.pool(`${process.env.CONNECTION_STRING}`);
-  await pool.close();
+  const pool = await odbc.pool(`${process.env.CONNECTION_STRING}`)
+  await pool.close()
   // pool is now closed
 }
 
-closeExample();
+closeExample()
 ```
 
 ---
@@ -609,17 +609,17 @@ Prepares an SQL statement, with or without parameters (?) to bind to.
 **Promises**
 
 ```javascript
-const odbc = require("@lukaselmer/odbc");
+const odbc = require('@lukaselmer/odbc')
 
 // can only use await keyword in an async function
 async function prepareExample() {
-  const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`);
-  const statement = await connection.createStatement();
-  await statement.prepare("INSERT INTO MY_TABLE VALUES(?, ?)");
+  const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`)
+  const statement = await connection.createStatement()
+  await statement.prepare('INSERT INTO MY_TABLE VALUES(?, ?)')
   // statement has been prepared, can bind and execute
 }
 
-prepareExample();
+prepareExample()
 ```
 
 ---
@@ -637,19 +637,19 @@ Binds an array of values to the parameters on the prepared SQL statement. Cannot
 **Promises**
 
 ```javascript
-const odbc = require("@lukaselmer/odbc");
+const odbc = require('@lukaselmer/odbc')
 
 // can only use await keyword in an async function
 async function bindExample() {
-  const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`);
-  const statement = await connection.createStatement();
-  await statement.prepare("INSERT INTO MY_TABLE VALUES(?, ?)");
+  const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`)
+  const statement = await connection.createStatement()
+  await statement.prepare('INSERT INTO MY_TABLE VALUES(?, ?)')
   // Assuming MY_TABLE has INTEGER and VARCHAR fields.
-  await statement.bind([1, "Name"]);
+  await statement.bind([1, 'Name'])
   // statement has been prepared and values bound, can now execute
 }
 
-bindExample();
+bindExample()
 ```
 
 ---
@@ -663,20 +663,20 @@ Executes the prepared and optionally bound SQL statement.
 **Promises**
 
 ```javascript
-const odbc = require("@lukaselmer/odbc");
+const odbc = require('@lukaselmer/odbc')
 
 // can only use await keyword in an async function
 async function executeExample() {
-  const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`);
-  const statement = await connection.createStatement();
-  await statement.prepare("INSERT INTO MY_TABLE VALUES(?, ?)");
+  const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`)
+  const statement = await connection.createStatement()
+  await statement.prepare('INSERT INTO MY_TABLE VALUES(?, ?)')
   // Assuming MY_TABLE has INTEGER and VARCHAR fields.
-  await statement.bind([1, "Name"]);
-  const result = await statement.execute();
-  console.log(result);
+  await statement.bind([1, 'Name'])
+  const result = await statement.execute()
+  console.log(result)
 }
 
-executeExample();
+executeExample()
 ```
 
 ---
@@ -690,21 +690,21 @@ Closes the Statement, freeing the statement handle. Running functions on the sta
 **Promises**
 
 ```javascript
-const odbc = require("@lukaselmer/odbc");
+const odbc = require('@lukaselmer/odbc')
 
 // can only use await keyword in an async function
 async function closeStatementExample() {
-  const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`);
-  const statement = await connection.createStatement();
-  await statement.prepare("INSERT INTO MY_TABLE VALUES(?, ?)");
+  const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`)
+  const statement = await connection.createStatement()
+  await statement.prepare('INSERT INTO MY_TABLE VALUES(?, ?)')
   // Assuming MY_TABLE has INTEGER and VARCHAR fields.
-  await statement.bind([1, "Name"]);
-  const result = await statement.execute();
-  console.log(result);
-  await statement.close();
+  await statement.bind([1, 'Name'])
+  const result = await statement.execute()
+  console.log(result)
+  await statement.close()
 }
 
-closeStatementExample();
+closeStatementExample()
 ```
 
 ---

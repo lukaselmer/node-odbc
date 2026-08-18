@@ -1,9 +1,9 @@
 ---
 name: Bug Report
 about: Notify us about a bug in the odbc Node.js package
-title: "[BUG]"
-labels: ""
-assignees: ""
+title: '[BUG]'
+labels: ''
+assignees: ''
 ---
 
 <!--

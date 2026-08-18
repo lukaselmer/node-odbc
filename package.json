@@ -72,9 +72,6 @@
     "test:watch": "vitest",
     "test:rust": "cargo test"
   },
-  "dependencies": {
-    "node-gyp-build": "^4.8.4"
-  },
   "devDependencies": {
     "@napi-rs/cli": "^3.0.0",
     "@types/node": "^26.2.0",

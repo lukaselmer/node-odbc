@@ -1,37 +1,37 @@
-import type { NativeConnection } from "./native.ts";
-import { Statement } from "./Statement.ts";
-import type { Parameter, Result } from "./types.ts";
+import type { NativeConnection } from './native.ts'
+import { Statement } from './Statement.ts'
+import type { Parameter, Result } from './types.ts'
 
-const CONNECTION_CLOSED_ERROR = "Connection has already been closed!";
+const CONNECTION_CLOSED_ERROR = 'Connection has already been closed!'
 
 export class Connection {
-  static readonly CONNECTION_CLOSED_ERROR = CONNECTION_CLOSED_ERROR;
+  static readonly CONNECTION_CLOSED_ERROR = CONNECTION_CLOSED_ERROR
 
-  private connection: NativeConnection | null;
+  private connection: NativeConnection | null
 
   constructor(connection: NativeConnection) {
-    this.connection = connection;
+    this.connection = connection
   }
 
   /** Whether the driver still considers the link to be up. */
   get connected(): boolean {
-    return this.connection?.connected ?? false;
+    return this.connection?.connected ?? false
   }
 
   /** Runs a query, optionally binding values to its `?` placeholders. */
   async query<T = unknown>(sql: string, parameters?: readonly Parameter[]): Promise<Result<T>> {
-    if (typeof sql !== "string") {
-      throw new TypeError("[node-odbc]: connection.query requires the SQL to be a string.");
+    if (typeof sql !== 'string') {
+      throw new TypeError('[node-odbc]: connection.query requires the SQL to be a string.')
     }
     if (parameters !== undefined && parameters !== null && !Array.isArray(parameters)) {
-      throw new TypeError("[node-odbc]: connection.query requires the parameters to be an array.");
+      throw new TypeError('[node-odbc]: connection.query requires the parameters to be an array.')
     }
 
-    return this.native().query<T>(sql, parameters ?? undefined);
+    return this.native().query<T>(sql, parameters ?? undefined)
   }
 
   async createStatement(): Promise<Statement> {
-    return new Statement(await this.native().createStatement());
+    return new Statement(await this.native().createStatement())
   }
 
   /** The tables matching the restrictions, where `null` means "no restriction". */
@@ -41,7 +41,7 @@ export class Connection {
     table: string | null,
     type: string | null,
   ): Promise<Result<T>> {
-    return this.native().tables<T>(catalog, schema, table, type);
+    return this.native().tables<T>(catalog, schema, table, type)
   }
 
   /** The columns matching the restrictions, where `null` means "no restriction". */
@@ -51,33 +51,33 @@ export class Connection {
     table: string | null,
     column: string | null,
   ): Promise<Result<T>> {
-    return this.native().columns<T>(catalog, schema, table, column);
+    return this.native().columns<T>(catalog, schema, table, column)
   }
 
   /** Begins a transaction, turning off auto-commit until commit or rollback. */
   async beginTransaction(): Promise<void> {
-    return this.native().beginTransaction();
+    return this.native().beginTransaction()
   }
 
   async commit(): Promise<void> {
-    return this.native().commit();
+    return this.native().commit()
   }
 
   async rollback(): Promise<void> {
-    return this.native().rollback();
+    return this.native().rollback()
   }
 
   /** Closing twice is not an error, so that cleanup paths can be unconditional. */
   async close(): Promise<void> {
-    const connection = this.connection;
-    if (!connection) return;
+    const connection = this.connection
+    if (!connection) return
 
-    this.connection = null;
-    await connection.close();
+    this.connection = null
+    await connection.close()
   }
 
   private native(): NativeConnection {
-    if (!this.connection) throw new Error(CONNECTION_CLOSED_ERROR);
-    return this.connection;
+    if (!this.connection) throw new Error(CONNECTION_CLOSED_ERROR)
+    return this.connection
   }
 }

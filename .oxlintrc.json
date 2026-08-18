@@ -11,13 +11,7 @@
     "node": true,
     "es2024": true
   },
-  "ignorePatterns": [
-    "dist/**",
-    "prebuilds/**",
-    "target/**",
-    "lib/constants.generated.ts",
-    ".github/**"
-  ],
+  "ignorePatterns": ["dist/**", "prebuilds/**", "target/**", "lib/constants.generated.ts", ".github/**"],
   "rules": {
     "typescript/no-explicit-any": "error",
     "typescript/no-non-null-assertion": "error",
