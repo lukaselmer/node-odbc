@@ -93,6 +93,11 @@ Instead, tracing should be enabled through your driver manager, and that informa
 - **Promise-only.** The callback API is gone: every asynchronous function returns a Promise.
   Node.js 24 or later is required.
 
+- **ESM only, and no dependencies.** The package ships ES modules compiled by `tsc`, with no
+  bundler and nothing in `dependencies`. CommonJS callers are unaffected: Node has been able to
+  `require()` a synchronous ES module graph since 22.12, so `require('@lukaselmer/odbc')` still
+  returns the same named exports.
+
 - **One thread per connection.** Every ODBC call for a connection runs on a thread that
   connection owns, including connect and disconnect. The Actian/Ingres driver keeps session
   state per thread and deadlocks when a connection-level call arrives from another live
@@ -229,7 +234,7 @@ In order to get a connection, you must use the `.connect` function exported from
 **Promises**
 
 ```javascript
-const odbc = require('@lukaselmer/odbc')
+import * as odbc from '@lukaselmer/odbc'
 
 async function connectToDatabase() {
   const connection1 = await odbc.connect('DSN=MYDSN')
@@ -261,16 +266,16 @@ Run a query on the database. Can be passed an SQL string with parameter markers 
 - **sql**: The SQL string to execute
 - **parameters?**: An array of parameters to be bound the parameter markers (`?`)
 
-```JavaScript
-const odbc = require('@lukaselmer/odbc');
+```javascript
+import * as odbc from '@lukaselmer/odbc'
 
 async function queryExample() {
-    const connection = await odbc.connect(connectionString);
-    const result = await connection.query('SELECT * FROM QIWS.QCUSTCDT');
-    console.log(result);
+  const connection = await odbc.connect(connectionString)
+  const result = await connection.query('SELECT * FROM QIWS.QCUSTCDT')
+  console.log(result)
 }
 
-queryExample();
+queryExample()
 ```
 
 ---
@@ -284,9 +289,8 @@ Returns a [Statement](#Statement) object from the connection.
 **Promises**
 
 ```javascript
-const odbc = require('@lukaselmer/odbc')
+import * as odbc from '@lukaselmer/odbc'
 
-// can only use await keyword in an async function
 async function statementExample() {
   const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`)
   const statement = await connection.createStatement()
@@ -314,7 +318,7 @@ Returns a [result array](#result-array) listing the tables that match the given 
 **Promises**
 
 ```javascript
-const odbc = require('@lukaselmer/odbc')
+import * as odbc from '@lukaselmer/odbc'
 
 async function tablesExample() {
   const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`)
@@ -343,7 +347,7 @@ Returns a [result array](#result-array) listing the columns that match the given
 **Promises**
 
 ```javascript
-const odbc = require('@lukaselmer/odbc')
+import * as odbc from '@lukaselmer/odbc'
 
 async function columnsExample() {
   const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`)
@@ -365,9 +369,8 @@ Begins a transaction on the connection. The transaction can be committed by call
 **Promises**
 
 ```javascript
-const odbc = require('@lukaselmer/odbc')
+import * as odbc from '@lukaselmer/odbc'
 
-// can only use await keyword in an async function
 async function transaction() {
   const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`)
   await connection.beginTransaction()
@@ -388,9 +391,8 @@ Commits an open transaction. If called on a connection that doesn't have an open
 **Promises**
 
 ```javascript
-const odbc = require('@lukaselmer/odbc')
+import * as odbc from '@lukaselmer/odbc'
 
-// can only use await keyword in an async function
 async function commitTransaction() {
   const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`)
   await connection.beginTransaction()
@@ -413,9 +415,8 @@ Rolls back an open transaction. If called on a connection that doesn't have an o
 **Promises**
 
 ```javascript
-const odbc = require('@lukaselmer/odbc')
+import * as odbc from '@lukaselmer/odbc'
 
-// can only use await keyword in an async function
 async function rollbackTransaction() {
   const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`)
   await connection.beginTransaction()
@@ -438,9 +439,8 @@ Closes an open connection. Any transactions on the connection that have not been
 **Promises**
 
 ```javascript
-const odbc = require('@lukaselmer/odbc')
+import * as odbc from '@lukaselmer/odbc'
 
-// can only use await keyword in an async function
 async function closeConnection() {
   const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`)
   // do something with your connection here
@@ -459,7 +459,7 @@ A synchronous boolean getter reporting whether the driver still considers the co
 #### Examples:
 
 ```javascript
-const odbc = require('@lukaselmer/odbc')
+import * as odbc from '@lukaselmer/odbc'
 
 async function checkConnection() {
   const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`)
@@ -500,16 +500,15 @@ Note that `odbc.pool` will resolve as soon as it has created 1 connection. It wi
 
 **Promises**
 
-```JavaScript
-const odbc = require('@lukaselmer/odbc');
+```javascript
+import * as odbc from '@lukaselmer/odbc'
 
-// can only use await keyword in an async function
 async function createPool() {
-    const pool = await odbc.pool(`${process.env.CONNECTION_STRING}`);
-    // can now do something with the Pool
+  const pool = await odbc.pool(`${process.env.CONNECTION_STRING}`)
+  // can now do something with the Pool
 }
 
-createPool();
+createPool()
 ```
 
 ### `.connect()`
@@ -521,9 +520,8 @@ Returns a [Connection](#connection) object for you to use from the Pool. Doesn't
 **Promises**
 
 ```javascript
-const odbc = require('@lukaselmer/odbc')
+import * as odbc from '@lukaselmer/odbc'
 
-// can only use await keyword in an async function
 async function connectExample() {
   const pool = await odbc.pool(`${process.env.CONNECTION_STRING}`)
   const connection = await pool.connect()
@@ -549,9 +547,8 @@ Utility function to execute a query on any open connection in the pool. Will get
 **Promises**
 
 ```javascript
-const odbc = require('@lukaselmer/odbc')
+import * as odbc from '@lukaselmer/odbc'
 
-// can only use await keyword in an async function
 async function queryExample() {
   const pool = await odbc.pool(`${process.env.CONNECTION_STRING}`)
   const result = await pool.query('SELECT * FROM MY_TABLE')
@@ -572,9 +569,8 @@ Closes the entire pool of currently unused connections. Will not close connectio
 **Promises**
 
 ```javascript
-const odbc = require('@lukaselmer/odbc')
+import * as odbc from '@lukaselmer/odbc'
 
-// can only use await keyword in an async function
 async function closeExample() {
   const pool = await odbc.pool(`${process.env.CONNECTION_STRING}`)
   await pool.close()
@@ -609,9 +605,8 @@ Prepares an SQL statement, with or without parameters (?) to bind to.
 **Promises**
 
 ```javascript
-const odbc = require('@lukaselmer/odbc')
+import * as odbc from '@lukaselmer/odbc'
 
-// can only use await keyword in an async function
 async function prepareExample() {
   const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`)
   const statement = await connection.createStatement()
@@ -637,9 +632,8 @@ Binds an array of values to the parameters on the prepared SQL statement. Cannot
 **Promises**
 
 ```javascript
-const odbc = require('@lukaselmer/odbc')
+import * as odbc from '@lukaselmer/odbc'
 
-// can only use await keyword in an async function
 async function bindExample() {
   const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`)
   const statement = await connection.createStatement()
@@ -663,9 +657,8 @@ Executes the prepared and optionally bound SQL statement.
 **Promises**
 
 ```javascript
-const odbc = require('@lukaselmer/odbc')
+import * as odbc from '@lukaselmer/odbc'
 
-// can only use await keyword in an async function
 async function executeExample() {
   const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`)
   const statement = await connection.createStatement()
@@ -690,9 +683,8 @@ Closes the Statement, freeing the statement handle. Running functions on the sta
 **Promises**
 
 ```javascript
-const odbc = require('@lukaselmer/odbc')
+import * as odbc from '@lukaselmer/odbc'
 
-// can only use await keyword in an async function
 async function closeStatementExample() {
   const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`)
   const statement = await connection.createStatement()

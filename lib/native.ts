@@ -40,10 +40,7 @@ interface NativeOdbc {
   odbcConstants(): OdbcConstants
 }
 
-/**
- * The addon is a CommonJS binary, so it is reached through `createRequire`
- * rather than an import. The bundler rewrites `import.meta.url` for CommonJS.
- */
+/** The addon is a CommonJS binary, so it is reached through `createRequire` rather than an import. */
 const require = createRequire(import.meta.url)
 const packageRoot = fileURLToPath(new URL('..', import.meta.url))
 const platform = `${process.platform}-${process.arch}`

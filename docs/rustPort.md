@@ -38,7 +38,7 @@ portable path ODBC offers.
 
 ```
 src/          Rust: the addon
-lib/          TypeScript: the JavaScript API, bundled to dist/ by tsdown
+lib/          TypeScript: the JavaScript API, compiled to dist/ by tsc
 test/         vitest suite; test/manual holds scripts that need a database
 scripts/      build helpers, including the constants generator
 ```
@@ -141,6 +141,12 @@ Linux x86_64 is cross-compiled from any host with `npm run build:linux-x64`, whi
 `cargo-zigbuild` and fetches a Linux `libodbc` for the linker to resolve against — the real
 driver manager is what the addon binds to at runtime. The result has been verified against
 the testlab Ingres, so CI needs no x86_64 runner and no container to produce it.
+
+The package is ESM only, emitted by `tsc`. Node has been able to `require()` a synchronous ESM
+graph since 22.12, and this package needs 24, so a CommonJS caller still gets named exports from
+a plain `require('@lukaselmer/odbc')` — verified against an installed tarball. That removes the
+reason to keep a bundler: the only thing one did that `tsc` cannot is rewrite `import.meta.url`,
+which the addon loader needs and which is a syntax error in CommonJS.
 
 ## Verification
 
