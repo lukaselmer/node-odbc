@@ -1,6 +1,6 @@
 #!/bin/bash
-# Bootstraps the Actian client the way the eng-tooling image does, then runs
-# the smoke test. The vnode has to exist before the driver can resolve the DSN.
+# Bootstraps the Actian client the way the deployed image does, then runs the
+# smoke test. The vnode has to exist before the driver can resolve the DSN.
 
 set -euo pipefail
 

@@ -86,8 +86,8 @@ Everything else (`null`, number, string, boolean) maps directly.
 
 ## Behaviour that must be preserved
 
-The port reproduces the observable behaviour of the C++, because the test suite and
-`apps/<app>` in the assets repo depend on it:
+The port reproduces the observable behaviour of the C++, because the test suite and the consuming
+application that consumes it depend on it:
 
 - result arrays carry `count`, `columns`, `statement`, `parameters` and `return` as properties;
 - errors carry `odbcErrors` with `state`, `code` and `message`;
@@ -134,14 +134,18 @@ The Actian ODBC client only ships for Linux x86_64, so the Ingres checks run in 
 - `test/ingres/run.sh` builds an image with the Actian client and the sidecar. Use it to check that
   the driver loads and that connection errors surface correctly; it does not configure a vnode, so
   it cannot open an authenticated session.
-- `test/ingres/runInPod.sh <pod>` runs `test/ingres/smoke.js` inside a running `<app>`
-  pod, which already has a configured client and a resolvable vnode. Same image, same driver, same
-  database as production.
+- `test/ingres/runInPod.sh` runs `test/ingres/smoke.js` inside an already running pod of the
+  consuming application, which has a configured client and a resolvable vnode. Same image, same
+  driver and same database as the deployment.
 
-Against the the test environment database (`<database>`) every check passes: connect, simple and parameterised
-queries, transactions, and a catalog query returning 1238 tables. The interesting one is the failure
-path that motivated this port — a syntax error arrives as a rejected promise carrying
-`odbcErrors: [{ state: "42000" }]`, and the connection is still usable afterwards.
+Both read their configuration from `test/ingres/.env`, which is gitignored because the host, the
+credentials and the pinned driver build are internal; `test/ingres/.env.example` documents the
+variables, and the values are written down with the consuming application, in its own repository.
+
+Against the test database every check passes: connect, simple and parameterised queries,
+transactions, and a catalog query. The interesting one is the failure path that motivated this port —
+a syntax error arrives as a rejected promise carrying `odbcErrors: [{ state: "42000" }]`, and the
+connection is still usable afterwards.
 
 Run against the same database and driver, the C++ addon and the Go sidecar produce the same message,
 the same SQLSTATE and the same recovery.

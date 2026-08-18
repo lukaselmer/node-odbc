@@ -7,7 +7,15 @@
 const assert = require('assert');
 const odbc = require('../../lib/odbc');
 
-const connectionString = process.env.INGRES_CONNECTION_STRING ?? 'DSN=<dsn>';
+const connectionString = `DSN=${requiredDsn()}`;
+
+// The DSN names an internal data source, so it comes from the environment
+// rather than being written down here; see test/ingres/.env.example.
+function requiredDsn() {
+  const dsn = process.env.INGRES_DSN;
+  if (!dsn) throw new Error('Set INGRES_DSN, see test/ingres/.env.example');
+  return dsn;
+}
 
 async function main() {
   await checkConnects();
@@ -31,7 +39,7 @@ async function checkSimpleQuery() {
   await withConnection(async (connection) => {
     const result = await connection.query('SELECT dbmsinfo(\'database\') AS db');
     assert.strictEqual(result.length, 1);
-    report(`simple query -> ${JSON.stringify(result[0])}`);
+    report('simple query returned the current database');
   });
 }
 

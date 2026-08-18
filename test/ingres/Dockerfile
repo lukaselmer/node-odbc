@@ -1,10 +1,10 @@
 # Runs the Go sidecar against a real Ingres database through the Actian ODBC
 # client.
 #
-# The Actian client is Linux x86_64 only, so this is the only way to exercise
-# the Ingres driver from a macOS or arm64 machine. The Actian tarball lives in
-# the assets repository, so the build context has to hold both trees; see
-# test/ingres/run.sh, which assembles it.
+# The client only ships for Linux x86_64, so this is the only way to exercise
+# the Ingres driver from a macOS or arm64 machine. The client archive and the
+# odbc.ini selecting it are not in this repository; test/ingres/run.sh copies
+# them into the build context from the directory named by ACTIAN_ASSETS_DIR.
 
 FROM --platform=linux/amd64 golang:1.26-bookworm AS build
 
@@ -37,17 +37,18 @@ RUN echo 'deb http://deb.debian.org/debian trixie main' > /etc/apt/sources.list.
 # The Actian installer expects a dedicated owner account and uses sudo.
 RUN useradd -m -s /bin/bash actian
 
-COPY apps/<app>/actian/<actian-client-archive> /tmp/
-RUN cd /tmp \
-  && tar -xzf <actian-client-archive> \
-  && cd <actian-client-archive> \
+ARG ACTIAN_CLIENT_ARCHIVE
+COPY actian/ /tmp/actian/
+RUN cd /tmp/actian \
+  && tar -xzf "$ACTIAN_CLIENT_ARCHIVE" \
+  && cd "$(basename "$ACTIAN_CLIENT_ARCHIVE" .tgz)" \
   && ./client_install.sh -express -acceptlicense \
   && chown -R actian:actian /opt/Actian \
-  && rm -rf /tmp/actian-client-*
+  && rm -rf /tmp/actian
 
 RUN mkdir -p /etc/odbc
-COPY apps/<app>/actian/odbc.ini /etc/odbc/odbc.ini
-COPY apps/<app>/actian/odbcinst.ini /etc/odbc/odbcinst.ini
+COPY odbc/odbc.ini /etc/odbc/odbc.ini
+COPY odbc/odbcinst.ini /etc/odbc/odbcinst.ini
 
 WORKDIR /app
 COPY node-odbc/lib/ ./lib/
