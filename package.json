@@ -57,12 +57,12 @@
     "format": "oxfmt ."
   },
   "devDependencies": {
-    "@types/node": "^24.0.0",
+    "@types/node": "^24.13.3",
     "oxfmt": "^0.64.0",
     "oxlint": "^1.79.0",
     "oxlint-tsgolint": "^7.0.2001",
-    "typescript": "^5.9.0",
-    "vitest": "^3.2.0"
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.11"
   },
   "engines": {
     "node": ">=24.0.0"
