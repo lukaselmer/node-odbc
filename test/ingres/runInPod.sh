@@ -25,11 +25,12 @@ docker cp node-odbc-extract:/app/bin/linux-x64/node-odbc-server "$bundle/node-od
 docker rm node-odbc-extract >/dev/null
 
 mkdir -p "$bundle/podpkg/bin/linux-x64"
-cp -r "$repository/lib" "$bundle/podpkg/"
-cp "$repository/test/ingres/smoke.js" "$bundle/podpkg/smoke.js"
+cp -r "$repository/src" "$bundle/podpkg/"
+cp "$repository/test/ingres/smoke.ts" "$bundle/podpkg/smoke.ts"
+cp "$repository/package.json" "$bundle/podpkg/package.json"
 mv "$bundle/node-odbc-server" "$bundle/podpkg/bin/linux-x64/"
-sed -i.bak "s|require('../../lib/odbc')|require('./lib/odbc')|" "$bundle/podpkg/smoke.js"
-rm -f "$bundle/podpkg/smoke.js.bak"
+sed -i.bak "s|'../../src/odbc.ts'|'./src/odbc.ts'|" "$bundle/podpkg/smoke.ts"
+rm -f "$bundle/podpkg/smoke.ts.bak"
 tar -czf "$bundle/podpkg.tgz" -C "$bundle" podpkg
 
 echo "copying into the pod"
@@ -45,7 +46,7 @@ kubectl --context "$KUBE_CONTEXT" exec -n "$KUBE_NAMESPACE" "$KUBE_POD" -c "$KUB
     export ODBCSYSINI=/etc/odbc ODBCINI=/etc/odbc/odbc.ini
     export NODE_PATH=/app/node_modules
     export NODE_ODBC_SERVER=/tmp/podpkg/bin/linux-x64/node-odbc-server
-    node smoke.js
+    node --experimental-strip-types smoke.ts
     status=$?
     rm -rf /tmp/podpkg /tmp/podpkg.tgz
     exit $status

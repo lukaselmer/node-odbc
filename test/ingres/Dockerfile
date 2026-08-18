@@ -51,7 +51,7 @@ COPY odbc/odbc.ini /etc/odbc/odbc.ini
 COPY odbc/odbcinst.ini /etc/odbc/odbcinst.ini
 
 WORKDIR /app
-COPY node-odbc/lib/ ./lib/
+COPY node-odbc/src/ ./src/
 COPY node-odbc/package.json ./
 COPY node-odbc/test/ingres/ ./test/ingres/
 COPY --from=build /out/node-odbc-server ./bin/linux-x64/node-odbc-server

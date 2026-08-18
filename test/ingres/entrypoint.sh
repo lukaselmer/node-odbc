@@ -28,4 +28,4 @@ EOF
 netutil -file /tmp/netutil_commands.txt >/dev/null
 rm /tmp/netutil_commands.txt
 
-exec node test/ingres/smoke.js
+exec node --experimental-strip-types test/ingres/smoke.ts

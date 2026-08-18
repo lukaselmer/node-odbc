@@ -1,26 +1,12 @@
 {
   "name": "@lukaselmer/odbc",
-  "description": "unixodbc bindings for node",
   "version": "3.0.0-goalpha.1",
+  "description": "unixodbc bindings for node",
   "homepage": "https://github.com/lukaselmer/node-odbc",
-  "main": "lib/odbc.js",
-  "types": "lib/odbc.d.ts",
-  "files": [
-    "lib/",
-    "go/",
-    "bin/",
-    "CHANGELOG.md"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/lukaselmer/node-odbc.git"
-  },
   "bugs": {
     "url": "https://github.com/lukaselmer/node-odbc/issues"
   },
-  "publishConfig": {
-    "access": "public"
-  },
+  "license": "MIT",
   "contributors": [
     {
       "name": "Mark Irish",
@@ -35,23 +21,50 @@
       "email": "notwink@gmail.com"
     }
   ],
-  "license": "MIT",
-  "directories": {
-    "lib": "."
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/lukaselmer/node-odbc.git"
+  },
+  "files": [
+    "dist/",
+    "go/",
+    "bin/",
+    "CHANGELOG.md"
+  ],
+  "type": "module",
+  "main": "dist/odbc.js",
+  "types": "dist/odbc.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/odbc.d.ts",
+      "default": "./dist/odbc.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "npm run build:server && npm run build:types",
+    "build:server": "node scripts/buildServer.ts",
+    "build:types": "tsc --project tsconfig.build.json",
+    "prepublishOnly": "npm run build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "npm run lint:types && npm run lint:code && npm run lint:format",
+    "lint:types": "tsc --noEmit",
+    "lint:code": "oxlint --type-aware",
+    "lint:format": "oxfmt --check .",
+    "format": "oxfmt ."
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "oxfmt": "^0.64.0",
+    "oxlint": "^1.79.0",
+    "oxlint-tsgolint": "^7.0.2001",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
   },
   "engines": {
     "node": ">=24.0.0"
-  },
-  "scripts": {
-    "build": "node scripts/buildServer.js",
-    "test": "mocha --slow 5000 --timeout 30000",
-    "lint": "eslint ."
-  },
-  "devDependencies": {
-    "@eslint/js": "^10.0.0",
-    "@stylistic/eslint-plugin": "^5.10.0",
-    "eslint": "^10.0.3",
-    "globals": "^17.4.0",
-    "mocha": "^11.7.4"
   }
 }

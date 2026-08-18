@@ -1,0 +1,7 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "semicolons": "asNeeded",
+  "singleQuote": true,
+  "lineWidth": 100,
+  "ignorePatterns": ["dist/**", "bin/**", "go/**"]
+}

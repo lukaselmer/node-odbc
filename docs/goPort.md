@@ -115,21 +115,37 @@ Calling a function with the wrong signature still throws, because that is a mist
 code; everything else, including using a closed connection, rejects.
 
 `async` and `dotenv` are no longer dependencies: `Promise.all` replaces the first, and Node's own
-`process.loadEnvFile()` the second.
+`process.loadEnvFile()` the second. The package now has no runtime dependencies at all.
+
+### Toolchain
+
+The sources are TypeScript under `src/`, built to ESM in `dist/` with declarations, and exposed
+through an `exports` map. `dist/` is generated, so it is not in the repository; the published package
+contains it together with the sidecar binaries in `bin/`.
+
+| Concern    | Tool                                              |
+| ---------- | ------------------------------------------------- |
+| Types      | `tsc`, `strict` plus the stricter optional checks |
+| Tests      | Vitest, replacing Mocha                           |
+| Linting    | `oxlint`, replacing ESLint                        |
+| Formatting | `oxfmt`, replacing the ESLint stylistic rules     |
+
+`npm run lint` runs all three checks. Vitest runs the test files serially, since they share one
+table in one database.
 
 ## Error messages that changed
 
 Callers dispatch on `odbcErrors[].state`, the SQLSTATE, not on the message text, so `3.0.0` corrects
 the messages the addon had accumulated rather than carrying the typos forward:
 
-| C++                                                                                     | Go                                                                    |
-| --------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| C++                                                                                                                                                                        | Go                                                                             |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
 | `[node-odbc] Error in Statement::BindAsyncWorker::Bind: The number of parameters in the prepared statement (2) doesn't match the number of parameters passed to bind (3}.` | `[odbc] The prepared statement takes 2 parameters, but 3 were passed to bind.` |
-| `[odbc] CallProcedureAsyncWorker::Execute: Stored procedure 'x' doesn't exist`           | `[odbc] Stored procedure 'x' doesn't exist`                           |
-| `... number of parameter markers in the statment`                                        | `... number of parameter markers in the statement`                    |
-| `... the procedure expects and and the number of passed parameters`                      | `... the procedure expects and the number of passed parameters`       |
-| `[odbc] Error setting retrieving the changed login timeout`                              | `[odbc] Error retrieving the changed login timeout`                   |
-| `[odbc] Error closing the Statement`                                                     | `[odbc] Error closing the statement`                                  |
+| `[odbc] CallProcedureAsyncWorker::Execute: Stored procedure 'x' doesn't exist`                                                                                             | `[odbc] Stored procedure 'x' doesn't exist`                                    |
+| `... number of parameter markers in the statment`                                                                                                                          | `... number of parameter markers in the statement`                             |
+| `... the procedure expects and and the number of passed parameters`                                                                                                        | `... the procedure expects and the number of passed parameters`                |
+| `[odbc] Error setting retrieving the changed login timeout`                                                                                                                | `[odbc] Error retrieving the changed login timeout`                            |
+| `[odbc] Error closing the Statement`                                                                                                                                       | `[odbc] Error closing the statement`                                           |
 
 ## Verification
 
@@ -138,11 +154,12 @@ the messages the addon had accumulated rather than carrying the typos forward:
 `DBMS=postgres npm test` runs the existing mocha suite through unixODBC against a local PostgreSQL.
 Both implementations were run against the same database state:
 
-| Build            | passing | pending | failing |
-| ---------------- | ------: | ------: | ------: |
-| C++              |     171 |      23 |       2 |
-| Go               |     172 |      23 |       1 |
-| Go, promise-only |      92 |       6 |       1 |
+| Build                    | passing | pending | failing |
+| ------------------------ | ------: | ------: | ------: |
+| C++                      |     171 |      23 |       2 |
+| Go                       |     172 |      23 |       1 |
+| Go, promise-only         |      92 |       6 |       1 |
+| Go, TypeScript on Vitest |      90 |       4 |       1 |
 
 The suite shrank with the callback API it was testing. The remaining failure asserts that the pool
 holds `initialSize` connections the moment `pool()` resolves, which contradicts the documented

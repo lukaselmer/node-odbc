@@ -20,7 +20,7 @@ trap 'rm -rf "$context"' EXIT
 mkdir -p "$context/actian" "$context/odbc" "$context/node-odbc"
 cp "$ACTIAN_ASSETS_DIR/$ACTIAN_CLIENT_ARCHIVE" "$context/actian/"
 cp "$ACTIAN_ASSETS_DIR/odbc.ini" "$ACTIAN_ASSETS_DIR/odbcinst.ini" "$context/odbc/"
-cp -r "$repository/lib" "$repository/go" "$repository/test" "$repository/package.json" "$context/node-odbc/"
+cp -r "$repository/src" "$repository/go" "$repository/test" "$repository/package.json" "$context/node-odbc/"
 cp "$repository/test/ingres/Dockerfile" "$context/Dockerfile"
 
 docker build --platform linux/amd64 \

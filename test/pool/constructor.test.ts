@@ -1,0 +1,38 @@
+import { describe, it } from 'vitest';
+import assert from 'node:assert';
+import * as odbc from '../../src/odbc.ts';
+import { Connection } from '../../src/connection.ts';
+
+const delay = (milliseconds: number) =>
+  new Promise((resolve) => {
+    setTimeout(resolve, milliseconds);
+  });
+
+describe('odbc.pool...', () => {
+  describe('...with promises...', () => {
+    it('...should return the default number of open connections when no config passed.', async () => {
+      const pool = await odbc.pool(`${process.env['CONNECTION_STRING']}`);
+      assert.notDeepEqual(pool, null);
+      await delay(8000);
+      assert.deepEqual(pool.freeConnections.length, 10);
+      await pool.close();
+    });
+    it('...should open as many connections as passed with `initialSize` key...', async () => {
+      const poolConfig = {
+        connectionString: `${process.env['CONNECTION_STRING']}`,
+        initialSize: 5,
+      };
+      const pool = await odbc.pool(poolConfig);
+      assert.notDeepEqual(pool, null);
+      await delay(5000);
+      assert.deepEqual(pool.freeConnections.length, 5);
+      await pool.close();
+    });
+    it('...should have at least one free connection when .connect is called', async () => {
+      const pool = await odbc.pool(`${process.env['CONNECTION_STRING']}`);
+      const connection = await pool.connect();
+      assert.deepEqual(connection instanceof Connection, true);
+      await pool.close();
+    });
+  }); // ...with promises...
+});

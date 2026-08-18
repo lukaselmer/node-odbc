@@ -7,3 +7,5 @@ core*
 .vscode
 build*/
 bin/
+dist/
+*.tsbuildinfo
