@@ -2,134 +2,60 @@
 const assert = require('assert');
 const odbc   = require('../../lib/odbc');
 
-describe('.prepare(sql, [calback])...', () => {
+describe('.prepare(sql)...', () => {
   it('...should throw a TypeError if function signature doesn\'t match accepted signatures.', async () => {
     const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`);
     const statement = await connection.createStatement();
 
     const PREPARE_TYPE_ERROR = {
       name: 'TypeError',
-      message: '[node-odbc]: Incorrect function signature for call to statement.prepare({string}, {function}[optional]).',
+      message: '[node-odbc]: statement.prepare requires the SQL to be a string.',
     };
-    const DUMMY_CALLBACK = () => {};
 
-    assert.throws(() => {
-      statement.prepare();
+    await assert.rejects(async () => {
+      await statement.prepare();
     }, PREPARE_TYPE_ERROR);
-    assert.throws(() => {
-      statement.prepare(DUMMY_CALLBACK);
+    await assert.rejects(async () => {
+      await statement.prepare(1);
     }, PREPARE_TYPE_ERROR);
-    assert.throws(() => {
-      statement.prepare(1);
+    await assert.rejects(async () => {
+      await statement.prepare(null);
     }, PREPARE_TYPE_ERROR);
-    assert.throws(() => {
-      statement.prepare(1, DUMMY_CALLBACK);
+    await assert.rejects(async () => {
+      await statement.prepare(undefined);
     }, PREPARE_TYPE_ERROR);
-    assert.throws(() => {
-      statement.prepare(null);
-    }, PREPARE_TYPE_ERROR);
-    assert.throws(() => {
-      statement.prepare(null, DUMMY_CALLBACK);
-    }, PREPARE_TYPE_ERROR);
-    assert.throws(() => {
-      statement.prepare(undefined);
-    }, PREPARE_TYPE_ERROR);
-    assert.throws(() => {
-      statement.prepare(undefined, DUMMY_CALLBACK);
-    }, PREPARE_TYPE_ERROR);
-    assert.throws(() => {
-      statement.prepare({});
-    }, PREPARE_TYPE_ERROR);
-    assert.throws(() => {
-      statement.prepare({}, DUMMY_CALLBACK);
+    await assert.rejects(async () => {
+      await statement.prepare({});
     }, PREPARE_TYPE_ERROR);
 
     // await connection.close();
   });
-  describe('...with callbacks...', () => {
-    it('...should prepare a valid SQL string', (done) => {
-      odbc.connect(`${process.env.CONNECTION_STRING}`, (error, connection) => {
-        assert.deepEqual(error, null);
-        connection.createStatement((error1, statement) => {
-          assert.deepEqual(error1, null);
-          assert.notDeepEqual(statement, null);
-          statement.prepare(`INSERT INTO ${process.env.DB_SCHEMA}.${process.env.DB_TABLE} VALUES(?, ?, ?)`, (error2) => {
-            assert.deepEqual(error2, null);
-            connection.close((error3) => {
-              assert.deepEqual(error3, null);
-              done();
-            });
-          });
-        });
-      });
+  it('...should prepare a valid SQL string', async () => {
+    assert.doesNotReject(async () => {
+      const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`);
+      const statement = await connection.createStatement();
+      await statement.prepare(`INSERT INTO ${process.env.DB_SCHEMA}.${process.env.DB_TABLE} VALUES(?, ?, ?)`);
+      await connection.close();
     });
-    it('...should return an error with an invalid SQL string', function(done) {
-      // SQL Server and PostgreSQL don't check for syntax error when the application calls SQLPrepare
-      if (global.dbms === 'mssql' || global.dbms === 'postgres') return this.skip();
-      odbc.connect(`${process.env.CONNECTION_STRING}`, (error, connection) => {
-        assert.deepEqual(error, null);
-        connection.createStatement((error1, statement) => {
-          assert.deepEqual(error1, null);
-          assert.notDeepEqual(statement, null);
-          statement.prepare('INSERT INTO dummy123.asdtable456 VALUES(?zzszzzz ?, ?)', (error2) => {
-            assert.notDeepEqual(error2, null);
-            assert.deepEqual(error2 instanceof Error, true);
-            connection.close((error3) => {
-              assert.deepEqual(error3, null);
-              done();
-            });
-          });
-        });
-      });
+  });
+  it('...should return an error with an invalid SQL string', async function() {
+    // SQL Server and PostgreSQL don't check for syntax error when the application calls SQLPrepare
+    if (global.dbms === 'mssql' || global.dbms === 'postgres') return this.skip();
+    assert.rejects(async () => {
+      const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`);
+      const statement = await connection.createStatement();
+      await statement.prepare('INSERT INTO dummy123.table456 VALUES()');
+      await connection.close();
     });
-    it('...should return an error with a blank SQL string', function (done) {
-      // SQL Server and PostgreSQL don't check for syntax error when the application calls SQLPrepare
-      if (global.dbms === 'mssql' || global.dbms === 'postgres') return this.skip();
-      odbc.connect(`${process.env.CONNECTION_STRING}`, (error, connection) => {
-        assert.deepEqual(error, null);
-        connection.createStatement((error1, statement) => {
-          assert.deepEqual(error1, null);
-          assert.notDeepEqual(statement, null);
-          statement.prepare('', (error2) => {
-            assert.notDeepEqual(error2, null);
-            assert.deepEqual(error2 instanceof Error, true);
-            connection.close((error3) => {
-              assert.deepEqual(error3, null);
-              done();
-            });
-          });
-        });
-      });
+  });
+  it('...should return an error with a blank SQL string', async function() {
+    // SQL Server and PostgreSQL don't check for syntax error when the application calls SQLPrepare
+    if (global.dbms === 'mssql' || global.dbms === 'postgres') return this.skip();
+    assert.rejects(async () => {
+      const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`);
+      const statement = await connection.createStatement();
+      await statement.prepare('');
+      await connection.close();
     });
-  }); // '...with callbacks...'
-  describe('...with promises...', () => {
-    it('...should prepare a valid SQL string', async () => {
-      assert.doesNotReject(async () => {
-        const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`);
-        const statement = await connection.createStatement();
-        await statement.prepare(`INSERT INTO ${process.env.DB_SCHEMA}.${process.env.DB_TABLE} VALUES(?, ?, ?)`);
-        await connection.close();
-      });
-    });
-    it('...should return an error with an invalid SQL string', async function() {
-      // SQL Server and PostgreSQL don't check for syntax error when the application calls SQLPrepare
-      if (global.dbms === 'mssql' || global.dbms === 'postgres') return this.skip();
-      assert.rejects(async () => {
-        const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`);
-        const statement = await connection.createStatement();
-        await statement.prepare('INSERT INTO dummy123.table456 VALUES()');
-        await connection.close();
-      });
-    });
-    it('...should return an error with a blank SQL string', async function() {
-      // SQL Server and PostgreSQL don't check for syntax error when the application calls SQLPrepare
-      if (global.dbms === 'mssql' || global.dbms === 'postgres') return this.skip();
-      assert.rejects(async () => {
-        const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`);
-        const statement = await connection.createStatement();
-        await statement.prepare('');
-        await connection.close();
-      });
-    });
-  }); // '...with promises...'
+  });
 });

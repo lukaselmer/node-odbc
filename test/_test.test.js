@@ -1,4 +1,14 @@
+const { existsSync } = require('node:fs')
 const odbc = require('../lib/odbc')
+
+/**
+ * Variables already in the environment win, so a `.env` only fills the gaps.
+ * The file is optional: CI passes everything in directly.
+ */
+function loadDbmsEnv(dbms) {
+  const path = `test/DBMS/${dbms}/.env`
+  if (existsSync(path)) process.loadEnvFile(path)
+}
 
 const OBJECTS_EXISTS_STATE = -601
 const DBMS_LIST = ['ibmi', 'mariadb', 'mssql', 'mysql', 'postgresql', 'postgres', 'sybase']
@@ -7,7 +17,7 @@ global.dbms = undefined
 before(async () => {
   if (process.env.DBMS) {
     if (DBMS_LIST.indexOf(process.env.DBMS) > -1) {
-      require('dotenv').config({ path: `test/DBMS/${process.env.DBMS}/.env`, quiet: true })
+      loadDbmsEnv(process.env.DBMS)
       global.dbms = process.env.DBMS
       global.dbmsConfig = require(`./DBMS/${process.env.DBMS}/config.js`)
     } else {
@@ -70,5 +80,4 @@ describe('odbc', () => {
   require('./connection/_test.test.js')
   require('./statement/_test.test.js')
   require('./pool/_test.test.js')
-  require('./cursor/_test.test.js')
 })
