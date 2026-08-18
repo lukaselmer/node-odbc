@@ -15,6 +15,7 @@ package odbcapi
 #cgo freebsd LDFLAGS: -L/usr/local/lib -lodbc
 
 #include <stdlib.h>
+#include <stdint.h>
 #include <sql.h>
 #include <sqlext.h>
 

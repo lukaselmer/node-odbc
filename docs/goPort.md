@@ -99,7 +99,28 @@ test suite and `apps/<app>` in the assets repo depend on it:
 
 ## Verification
 
+### PostgreSQL
+
 `DBMS=postgres npm test` runs the existing mocha suite through unixODBC against a local PostgreSQL.
-The suite was recorded green against the C++ build first, and the Go build has to match it.
+Both implementations were run against the same database state:
+
+| Build | passing | pending | failing |
+| ----- | ------: | ------: | ------: |
+| C++   |     171 |      23 |       2 |
+| Go    |     172 |      23 |       1 |
+
+The one remaining failure is `callProcedure` against a procedure that the PostgreSQL driver does not
+report through `SQLProcedures`; the C++ build fails it identically, with the same message. The
+second C++ failure is a flaky prepared-statement test.
+
+### Ingres
+
+The Actian ODBC client only ships for Linux x86_64, so `test/ingres/run.sh` builds a container with
+the client and the sidecar and runs `test/ingres/smoke.js` against a real Ingres server. Besides the
+usual queries it asserts the case that motivated this port: a syntax error must surface as a
+rejected promise carrying `odbcErrors`, and the connection must stay usable afterwards, rather than
+aborting the process.
+
+### Unit tests
 
 Go-level unit tests cover the protocol framing, value encoding and the SQL type conversion table.
