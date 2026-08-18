@@ -1,18 +1,20 @@
 import { describe, expect, it } from "vitest";
 import { Connection, pool } from "../../lib/index.ts";
-import { connectionString } from "../helpers.ts";
+import { connectionString, waitFor } from "../helpers.ts";
 
 describe("odbc.pool", () => {
   it("opens the default number of connections when no config is passed", async () => {
     const createdPool = await pool(connectionString());
-    await delay(8000);
+    await waitFor(() => createdPool.freeConnections.length === 10);
+
     expect(createdPool.freeConnections.length).toBe(10);
     await createdPool.close();
   });
 
   it("opens as many connections as passed with the initialSize option", async () => {
     const createdPool = await pool({ connectionString: connectionString(), initialSize: 5 });
-    await delay(5000);
+    await waitFor(() => createdPool.freeConnections.length === 5);
+
     expect(createdPool.freeConnections.length).toBe(5);
     await createdPool.close();
   });
@@ -24,9 +26,3 @@ describe("odbc.pool", () => {
     await createdPool.close();
   });
 });
-
-async function delay(milliseconds: number): Promise<void> {
-  await new Promise<void>((resolve) => {
-    setTimeout(resolve, milliseconds);
-  });
-}

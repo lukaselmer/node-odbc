@@ -39,18 +39,16 @@ impl OdbcConnection {
     }
 
     #[napi(ts_return_type = "Promise<ODBCStatement>")]
-    pub fn create_statement<'env>(
-        &self,
-        env: &'env Env) -> Result<Object<'env>> {
+    pub fn create_statement<'env>(&self, env: &'env Env) -> Result<Object<'env>> {
         let (deferred, promise) = promise::deferred::<OdbcStatement>(env)?;
         let thread = Arc::clone(&self.thread);
 
-        self.enqueue(move |session| {
-            match with_session(session).map(Session::create_statement) {
+        self.enqueue(
+            move |session| match with_session(session).map(Session::create_statement) {
                 Ok(id) => deferred.resolve(Box::new(move |_| Ok(OdbcStatement::new(thread, id)))),
                 Err(failure) => promise::reject(deferred, failure),
-            }
-        })?;
+            },
+        )?;
         Ok(promise)
     }
 
@@ -63,7 +61,12 @@ impl OdbcConnection {
         table: Option<String>,
         table_type: Option<String>,
     ) -> Result<Object<'env>> {
-        let selector = Selector { catalog, schema, table, fourth: table_type };
+        let selector = Selector {
+            catalog,
+            schema,
+            table,
+            fourth: table_type,
+        };
         self.result_set(env, move |session| session.tables(&selector))
     }
 
@@ -76,7 +79,12 @@ impl OdbcConnection {
         table: Option<String>,
         column: Option<String>,
     ) -> Result<Object<'env>> {
-        let selector = Selector { catalog, schema, table, fourth: column };
+        let selector = Selector {
+            catalog,
+            schema,
+            table,
+            fourth: column,
+        };
         self.result_set(env, move |session| session.columns(&selector))
     }
 
@@ -88,10 +96,13 @@ impl OdbcConnection {
     /// the driver last said.
     #[napi(getter)]
     pub fn connected(&self) -> bool {
-        match self.thread.run_if_idle(|session| session.as_ref().is_some_and(Session::is_connected))
+        match self
+            .thread
+            .run_if_idle(|session| session.as_ref().is_some_and(Session::is_connected))
         {
             Some(connected) => {
-                self.last_known_connected.store(connected, Ordering::Relaxed);
+                self.last_known_connected
+                    .store(connected, Ordering::Relaxed);
                 connected
             }
             None => self.last_known_connected.load(Ordering::Relaxed),
@@ -99,23 +110,17 @@ impl OdbcConnection {
     }
 
     #[napi(ts_return_type = "Promise<void>")]
-    pub fn begin_transaction<'env>(
-        &self,
-        env: &'env Env) -> Result<Object<'env>> {
+    pub fn begin_transaction<'env>(&self, env: &'env Env) -> Result<Object<'env>> {
         self.act(env, Session::begin_transaction)
     }
 
     #[napi(ts_return_type = "Promise<void>")]
-    pub fn commit<'env>(
-        &self,
-        env: &'env Env) -> Result<Object<'env>> {
+    pub fn commit<'env>(&self, env: &'env Env) -> Result<Object<'env>> {
         self.act(env, Session::commit)
     }
 
     #[napi(ts_return_type = "Promise<void>")]
-    pub fn rollback<'env>(
-        &self,
-        env: &'env Env) -> Result<Object<'env>> {
+    pub fn rollback<'env>(&self, env: &'env Env) -> Result<Object<'env>> {
         self.act(env, Session::rollback)
     }
 
@@ -123,9 +128,7 @@ impl OdbcConnection {
     /// releases its per-thread session state once the thread is gone, so a
     /// connection that outlived its thread would strand the session.
     #[napi(ts_return_type = "Promise<void>")]
-    pub fn close<'env>(
-        &self,
-        env: &'env Env) -> Result<Object<'env>> {
+    pub fn close<'env>(&self, env: &'env Env) -> Result<Object<'env>> {
         let (deferred, promise) = promise::unit(env)?;
         let thread = Arc::clone(&self.thread);
         let connected = Arc::clone(&self.last_known_connected);
@@ -169,22 +172,31 @@ impl OdbcConnection {
     }
 
     fn enqueue(&self, job: impl FnOnce(&mut Option<Session>) + Send + 'static) -> Result<()> {
-        self.thread.enqueue(job).map_err(|failure| Error::from_reason(failure.message))
+        self.thread
+            .enqueue(job)
+            .map_err(|failure| Error::from_reason(failure.message))
     }
 }
 
 impl OdbcConnection {
     pub fn new(thread: Arc<OdbcThread>) -> Self {
-        Self { thread, last_known_connected: Arc::new(AtomicBool::new(true)) }
+        Self {
+            thread,
+            last_known_connected: Arc::new(AtomicBool::new(true)),
+        }
     }
 }
 
 pub fn with_session(session: &mut Option<Session>) -> OdbcResult<&mut Session> {
-    session.as_mut().ok_or_else(|| OdbcFailure::new("[odbc] The connection is closed."))
+    session
+        .as_mut()
+        .ok_or_else(|| OdbcFailure::new("[odbc] The connection is closed."))
 }
 
 pub fn read_parameters(parameters: Option<Vec<Unknown>>) -> Result<Vec<Parameter>> {
-    let Some(parameters) = parameters else { return Ok(Vec::new()) };
+    let Some(parameters) = parameters else {
+        return Ok(Vec::new());
+    };
     parameters.iter().map(read_parameter).collect()
 }
 
@@ -194,6 +206,8 @@ fn read_parameter(value: &Unknown) -> Result<Parameter> {
         ValueType::Boolean => Ok(Parameter::Boolean(value.coerce_to_bool()?)),
         ValueType::Number => Ok(Parameter::Number(value.coerce_to_number()?.get_double()?)),
         ValueType::BigInt => Ok(Parameter::BigInt(value.coerce_to_number()?.get_int64()?)),
-        _ => Ok(Parameter::Text(value.coerce_to_string()?.into_utf8()?.into_owned()?)),
+        _ => Ok(Parameter::Text(
+            value.coerce_to_string()?.into_utf8()?.into_owned()?,
+        )),
     }
 }

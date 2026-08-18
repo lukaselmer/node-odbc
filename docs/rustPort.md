@@ -245,6 +245,25 @@ here argues against a thread per connection. Raising `MAX_ACTIVELY_CONNECTING` w
 real improvement, but it is a change to shared pool behaviour and belongs in its own MR
 rather than hiding inside a rewrite. `test/manual/connectTiming.mjs` reproduces the numbers.
 
+## CI
+
+`.github/workflows/ci.yml` runs four jobs on every pull request:
+
+| Job                      | What it does                                                                                                                                                    |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Rust                     | `cargo fmt --check`, `cargo clippy -D warnings`, `cargo test`                                                                                                   |
+| TypeScript               | `build:ts`, `typecheck`, `lint`, `format:check` — no toolchain or driver manager, because the constants come from the Rust _source_ rather than the built addon |
+| Tests against PostgreSQL | builds the addon, runs the vitest suite against a `postgres:17` service through `odbc-postgresql`                                                               |
+| Linux x64 artefact       | builds it and asserts the result really is an `ELF 64-bit … x86-64` before uploading                                                                            |
+
+`release.yml` runs on a `v*` tag: it checks the tag matches `package.json`, builds the addon
+and the JavaScript, re-runs the checks, publishes to npm with provenance under a dist-tag
+derived from the version, and attaches the artefact to the GitHub release.
+
+**Linux x64 is the only platform built.** It is the only one we deploy to. The package ships
+the crate, so another platform can build from source, but no prebuilt binary is produced for
+it.
+
 ## Testing locally
 
 ```sh

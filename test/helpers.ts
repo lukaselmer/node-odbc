@@ -40,6 +40,25 @@ export function normalizeRow<T extends object>(row: T): Record<string, unknown> 
   return Object.fromEntries(Object.entries(row).map(([key, value]) => [key.toUpperCase(), value]));
 }
 
+/**
+ * Waits for a condition rather than a fixed delay.
+ *
+ * Filling a pool costs one round trip per connection, and a connect is about a
+ * second, so any sleep long enough to be safe is also long enough to be slow.
+ */
+export async function waitFor(
+  condition: () => boolean,
+  { timeoutMs = 30_000, intervalMs = 100 } = {},
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (!condition()) {
+    if (Date.now() > deadline) throw new Error(`Condition not met within ${timeoutMs}ms`);
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, intervalMs);
+    });
+  }
+}
+
 /** The first row, normalised, asserting that there is one. */
 export function firstRow<T extends object>(rows: readonly T[]): Record<string, unknown> {
   const row = rows[0];

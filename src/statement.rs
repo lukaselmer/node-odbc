@@ -20,26 +20,20 @@ pub struct OdbcStatement {
 #[napi]
 impl OdbcStatement {
     #[napi(ts_return_type = "Promise<void>")]
-    pub fn prepare<'env>(
-        &self,
-        env: &'env Env, sql: String) -> Result<Object<'env>> {
+    pub fn prepare<'env>(&self, env: &'env Env, sql: String) -> Result<Object<'env>> {
         let id = self.id;
         self.act(env, move |session| session.prepare(id, &sql))
     }
 
     #[napi(ts_return_type = "Promise<void>")]
-    pub fn bind<'env>(
-        &self,
-        env: &'env Env, parameters: Vec<Unknown>) -> Result<Object<'env>> {
+    pub fn bind<'env>(&self, env: &'env Env, parameters: Vec<Unknown>) -> Result<Object<'env>> {
         let id = self.id;
         let bound = read_parameters(Some(parameters))?;
         self.act(env, move |session| session.bind(id, bound))
     }
 
     #[napi(ts_return_type = "Promise<Result>")]
-    pub fn execute<'env>(
-        &self,
-        env: &'env Env) -> Result<Object<'env>> {
+    pub fn execute<'env>(&self, env: &'env Env) -> Result<Object<'env>> {
         let id = self.id;
         let (deferred, promise) = promise::result_set(env)?;
         self.enqueue(move |session| {
@@ -50,9 +44,7 @@ impl OdbcStatement {
     }
 
     #[napi(ts_return_type = "Promise<void>")]
-    pub fn close<'env>(
-        &self,
-        env: &'env Env) -> Result<Object<'env>> {
+    pub fn close<'env>(&self, env: &'env Env) -> Result<Object<'env>> {
         let id = self.id;
         let (deferred, promise) = promise::unit(env)?;
         self.enqueue(move |session| {
@@ -77,7 +69,9 @@ impl OdbcStatement {
     }
 
     fn enqueue(&self, job: impl FnOnce(&mut Option<Session>) + Send + 'static) -> Result<()> {
-        self.thread.enqueue(job).map_err(|failure| Error::from_reason(failure.message))
+        self.thread
+            .enqueue(job)
+            .map_err(|failure| Error::from_reason(failure.message))
     }
 }
 

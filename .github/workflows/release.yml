@@ -1,0 +1,66 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+  id-token: write # npm provenance
+
+jobs:
+  release:
+    name: Build and publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install unixODBC
+        run: sudo apt-get update && sudo apt-get install -y unixodbc-dev
+
+      - run: npm ci
+
+      - name: Check the tag matches the version
+        run: |
+          tagged="${GITHUB_REF_NAME#v}"
+          declared="$(node -p 'require("./package.json").version')"
+          if [ "$tagged" != "$declared" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match package version $declared" >&2
+            exit 1
+          fi
+
+      # Linux x64 is the only platform we deploy to; everything else builds from
+      # source, which package.json ships the crate for.
+      - name: Build the addon
+        run: npm run build
+
+      - name: Check the artefact is a Linux x64 addon
+        run: file prebuilds/linux-x64/odbc.node | grep -q 'ELF 64-bit LSB shared object, x86-64'
+
+      - name: Build the JavaScript
+        run: npm run build:ts
+
+      - name: Verify the package before publishing
+        run: cargo test && npm run typecheck && npm run lint
+
+      - name: Choose the dist-tag
+        run: .github/npm-tag.sh "$(node -p 'require("./package.json").version')" >> "$GITHUB_ENV"
+
+      - name: Publish to npm
+        run: npm publish --provenance --tag "$tag"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Attach the artefact to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: prebuilds/linux-x64/odbc.node
+          generate_release_notes: true
+          prerelease: ${{ env.tag != 'latest' }}

@@ -30,10 +30,9 @@
   },
   "files": [
     "dist/",
-    "lib/",
     "src/",
     "prebuilds/",
-    "scripts/",
+    "scripts/build.mjs",
     "build.rs",
     "Cargo.toml",
     "Cargo.lock",

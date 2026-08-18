@@ -20,3 +20,4 @@ baseline_test_output.txt
 
 # build output
 /dist
+*.tgz

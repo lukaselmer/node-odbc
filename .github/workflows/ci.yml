@@ -1,0 +1,119 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  rust:
+    name: Rust
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Install unixODBC
+        run: sudo apt-get update && sudo apt-get install -y unixodbc-dev
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test
+
+  javascript:
+    name: TypeScript
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # The constants are generated from the Rust source rather than the built
+      # addon, so this job needs neither a toolchain nor a driver manager.
+      - run: npm run build:ts
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run format:check
+
+  test:
+    name: Tests against PostgreSQL
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: odbc
+          POSTGRES_PASSWORD: odbc
+          POSTGRES_DB: odbctest
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install unixODBC and the PostgreSQL driver
+        run: sudo apt-get update && sudo apt-get install -y unixodbc-dev odbc-postgresql
+
+      - name: Register the data source
+        run: |
+          cat <<'INI' > "$HOME/.odbc.ini"
+          [PGTEST]
+          Driver      = PostgreSQL Unicode
+          Servername  = localhost
+          Port        = 5432
+          Database    = odbctest
+          INI
+
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+        env:
+          DBMS: postgres
+          CONNECTION_STRING: DSN=PGTEST;UID=odbc;PWD=odbc
+          DB_SCHEMA: public
+          DB_TABLE: odbctests
+          DB_USERNAME: odbc
+
+  linux-artefact:
+    name: Linux x64 artefact
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Install unixODBC
+        run: sudo apt-get update && sudo apt-get install -y unixodbc-dev
+      - run: npm ci
+      - run: npm run build
+      - run: npm run build:ts
+
+      # The only platform we deploy to. Other platforms build from source.
+      - name: Check the artefact is a Linux x64 addon
+        run: file prebuilds/linux-x64/odbc.node | grep -q 'ELF 64-bit LSB shared object, x86-64'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: odbc-linux-x64
+          path: |
+            prebuilds/linux-x64/odbc.node
+            dist/
+          if-no-files-found: error

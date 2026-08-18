@@ -37,8 +37,13 @@ export interface NodeOdbcError extends Error {
   readonly odbcErrors: readonly OdbcError[];
 }
 
-/** A value that can be bound to a `?` placeholder. */
-export type Parameter = number | bigint | string | boolean | Buffer | null;
+/**
+ * A value that can be bound to a `?` placeholder.
+ *
+ * `Uint8Array` rather than `Buffer`, so that consumers of the type declarations
+ * do not need `@types/node`. A `Buffer` is a `Uint8Array`, so it still fits.
+ */
+export type Parameter = number | bigint | string | boolean | Uint8Array | null;
 
 export interface ConnectionParameters {
   connectionString: string;
