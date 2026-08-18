@@ -3,7 +3,7 @@ const assert = require('assert');
 const odbc   = require('../../lib/odbc');
 const { colName, tableName } = require('../helpers');
 
-describe('.foreignKeys(catalog, schema, table, fkCatalog, fkSchema, fkTable, callback)...', () => {
+describe('.foreignKeys(catalog, schema, table, fkCatalog, fkSchema, fkTable)...', () => {
   before(async () => {
     let connection;
     try {
@@ -51,40 +51,6 @@ describe('.foreignKeys(catalog, schema, table, fkCatalog, fkSchema, fkTable, cal
     }
   });
 
-  describe('...with callbacks...', () => {
-    it('...should return information about a foreign key.', (done) => {
-      odbc.connect(`${process.env.CONNECTION_STRING}`, (error, connection) => {
-        assert.deepEqual(error, null);
-        connection.foreignKeys(null, `${process.env.DB_SCHEMA}`, tableName('PKTABLE'), null, `${process.env.DB_SCHEMA}`, tableName('FKTABLE'), (error1, results) => {
-          assert.strictEqual(error1, null);
-          assert.strictEqual(results.length, 1);
-          assert.deepStrictEqual(results.columns, global.dbmsConfig.sqlForeignKeysColumns);
-
-          const result = results[0];
-          // not testing for TABLE_CAT, dependent on the system
-          assert.strictEqual(result.PKTABLE_SCHEM, tableName(`${process.env.DB_SCHEMA}`));
-          assert.strictEqual(result.PKTABLE_NAME, tableName('PKTABLE'));
-          assert.strictEqual(result.PKCOLUMN_NAME, colName('ID'));
-          assert.strictEqual(result.FKTABLE_SCHEM, tableName(`${process.env.DB_SCHEMA}`));
-          assert.strictEqual(result.FKTABLE_NAME, tableName('FKTABLE'));
-          assert.strictEqual(result.FKCOLUMN_NAME, colName('PKID'));
-          done();
-        });
-      });
-    });
-    it('...should return empty with bad parameters.', (done) => {
-      odbc.connect(`${process.env.CONNECTION_STRING}`, (error, connection) => {
-        assert.deepEqual(error, null);
-        connection.foreignKeys(null, 'bad schema name', 'bad table name', null, 'badschema2', 'badtable2', (error1, results) => {
-          assert.strictEqual(error1, null);
-          assert.strictEqual(results.length, 0);
-          assert.deepStrictEqual(results.columns, global.dbmsConfig.sqlForeignKeysColumns);
-
-          done();
-        });
-      });
-    });
-  }); // ...with callbacks...
   describe('...with promises...', () => {
     it('...should return information about a primary key.', async () => {
       const connection = await odbc.connect(`${process.env.CONNECTION_STRING}`);

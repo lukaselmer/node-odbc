@@ -28,30 +28,12 @@ declare namespace odbc {
   }
 
   interface Statement {
-
-    ////////////////////////////////////////////////////////////////////////////
-    //   Callbacks   ///////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////
-
-    prepare(sql: string, callback: (error: NodeOdbcError) => undefined): undefined;
-
-    bind(parameters: Array<number|string>, callback: (error: NodeOdbcError) => undefined): undefined;
-
-    execute<T>(callback: (error: NodeOdbcError, result: Result<T>) => undefined): undefined;
-
-    cancel(callback: (error: NodeOdbcError) => undefined): undefined;
-
-    close(callback: (error: NodeOdbcError) => undefined): undefined;
-
-    ////////////////////////////////////////////////////////////////////////////
-    //   Promises   ////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////
-
     prepare(sql: string): Promise<void>;
 
     bind(parameters: Array<number|string>): Promise<void>;
 
     execute<T>(): Promise<Result<T>>;
+    execute<T, O extends QueryOptions>(options: O): O extends CursorQueryOptions ? Promise<Cursor> : Promise<Result<T>>;
 
     cancel(): Promise<void>;
 
@@ -86,43 +68,6 @@ declare namespace odbc {
   }
 
   interface Connection {
-
-    ////////////////////////////////////////////////////////////////////////////
-    //   Callbacks   ///////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////
-    query<T>(sql: string, callback: (error: NodeOdbcError, result: Result<T>) => undefined): undefined;
-    query<T>(sql: string, parameters: Array<number|string>, callback: (error: NodeOdbcError, result: Result<T> | Cursor) => undefined): undefined;
-    query<T, O extends QueryOptions>(sql: string, options: O, callback: (error: NodeOdbcError, result: O extends CursorQueryOptions ? Cursor : Result<T>) => undefined): undefined;
-    query<T, O extends QueryOptions>(sql: string, parameters: Array<number|string>, options: O, callback: (error: NodeOdbcError, result: O extends CursorQueryOptions ? Cursor : Result<T>) => undefined): undefined;
-
-    callProcedure<T>(catalog: string|null, schema: string|null, name: string, callback: (error: NodeOdbcError, result: Result<T>) => undefined): undefined;
-    callProcedure<T>(catalog: string|null, schema: string|null, name: string, parameters: Array<number|string>, callback: (error: NodeOdbcError, result: Result<T>) => undefined): undefined;
-
-    createStatement(callback: (error: NodeOdbcError, statement: Statement) => undefined): undefined;
-
-    primaryKeys<T>(catalog: string|null, schema: string|null, table: string|null, callback: (error: NodeOdbcError, result: Result<T>) => undefined): undefined;
-
-    foreignKeys<T>(pkCatalog: string|null, pkSchema: string|null, pkTable: string|null, fkCatalog: string|null, fkSchema: string|null, fkTable: string|null, callback: (error: NodeOdbcError, result: Result<T>) => undefined): undefined;
-
-    tables<T>(catalog: string|null, schema: string|null, table: string|null, type: string|null, callback: (error: NodeOdbcError, result: Result<T>) => undefined): undefined;
-
-    columns<T>(catalog: string|null, schema: string|null, table: string|null, column: string|null, callback: (error: NodeOdbcError, result: Result<T>) => undefined): undefined;
-
-    setIsolationLevel(level: number, callback: (error: NodeOdbcError) => undefined): undefined;
-
-    beginTransaction(callback: (error: NodeOdbcError) => undefined): undefined;
-
-    commit(callback: (error: NodeOdbcError) => undefined): undefined;
-
-    rollback(callback: (error: NodeOdbcError) => undefined): undefined;
-
-    cancel(callback: (error: NodeOdbcError) => undefined): undefined;
-
-    close(callback: (error: NodeOdbcError) => undefined): undefined;
-
-    ////////////////////////////////////////////////////////////////////////////
-    //   Promises   ////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////
     query<T>(sql: string): Promise<Result<T>>;
     query<T>(sql: string, parameters: Array<number|string>): Promise<Result<T>>;
     query<T, O extends QueryOptions>(sql: string, options: O): O extends CursorQueryOptions ? Promise<Cursor> : Promise<Result<T>>;
@@ -152,29 +97,12 @@ declare namespace odbc {
 
     close(): Promise<void>;
 
-    connected(): boolean;
+    readonly connected: boolean;
 
-    autocommit(): boolean;
+    readonly autocommit: boolean;
   }
 
   interface Pool {
-
-    ////////////////////////////////////////////////////////////////////////////
-    //   Callbacks   ///////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////
-    connect(callback: (error: NodeOdbcError, connection: Connection) => undefined): undefined;
-
-    query<T>(sql: string, callback: (error: NodeOdbcError, result: Result<T>) => undefined): undefined;
-    query<T>(sql: string, parameters: Array<number|string>, callback: (error: NodeOdbcError, result: Result<T> | Cursor) => undefined): undefined;
-    query<T, O extends QueryOptions>(sql: string, options: O, callback: (error: NodeOdbcError, result: O extends CursorQueryOptions ? Cursor : Result<T>) => undefined): undefined;
-    query<T, O extends QueryOptions>(sql: string, parameters: Array<number|string>, options: O, callback: (error: NodeOdbcError, result: O extends CursorQueryOptions ? Cursor : Result<T>) => undefined): undefined;
-
-    close(callback: (error: NodeOdbcError) => undefined): undefined;
-
-
-    ////////////////////////////////////////////////////////////////////////////
-    //   Promises   ////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////
     connect(): Promise<Connection>;
 
     query<T>(sql: string): Promise<Result<T>>;
@@ -188,32 +116,14 @@ declare namespace odbc {
   interface Cursor {
     noData: boolean
 
-    ////////////////////////////////////////////////////////////////////////////
-    //   Promises   ////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////
-
     fetch<T>(): Promise<Result<T>>
 
     close(): Promise<void>
 
-    ////////////////////////////////////////////////////////////////////////////
-    //   Callbacks   ///////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////
-
-    fetch<T>(callback: (error: NodeOdbcError, result: Result<T>) => undefined): undefined
-
-    close(callback: (error: NodeOdbcError) => undefined): undefined
   }
-
-  function connect(connectionString: string, callback: (error: NodeOdbcError, connection: Connection) => undefined): undefined;
-  function connect(connectionObject: ConnectionParameters, callback: (error: NodeOdbcError, connection: Connection) => undefined): undefined;
 
   function connect(connectionString: string): Promise<Connection>;
   function connect(connectionObject: ConnectionParameters): Promise<Connection>;
-
-
-  function pool(connectionString: string, callback: (error: NodeOdbcError, pool: Pool) => undefined): undefined;
-  function pool(connectionObject: PoolParameters, callback: (error: NodeOdbcError, pool: Pool) => undefined): undefined;
 
   function pool(connectionString: string): Promise<Pool>;
   function pool(connectionObject: PoolParameters): Promise<Pool>;

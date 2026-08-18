@@ -9,7 +9,7 @@ describe('.prepare(sql, [calback])...', () => {
 
     const PREPARE_TYPE_ERROR = {
       name: 'TypeError',
-      message: '[node-odbc]: Incorrect function signature for call to statement.prepare({string}, {function}[optional]).',
+      message: '[node-odbc]: Incorrect function signature for call to statement.prepare({string}).',
     };
     const DUMMY_CALLBACK = () => {};
 
@@ -46,62 +46,6 @@ describe('.prepare(sql, [calback])...', () => {
 
     // await connection.close();
   });
-  describe('...with callbacks...', () => {
-    it('...should prepare a valid SQL string', (done) => {
-      odbc.connect(`${process.env.CONNECTION_STRING}`, (error, connection) => {
-        assert.deepEqual(error, null);
-        connection.createStatement((error1, statement) => {
-          assert.deepEqual(error1, null);
-          assert.notDeepEqual(statement, null);
-          statement.prepare(`INSERT INTO ${process.env.DB_SCHEMA}.${process.env.DB_TABLE} VALUES(?, ?, ?)`, (error2) => {
-            assert.deepEqual(error2, null);
-            connection.close((error3) => {
-              assert.deepEqual(error3, null);
-              done();
-            });
-          });
-        });
-      });
-    });
-    it('...should return an error with an invalid SQL string', function(done) {
-      // SQL Server and PostgreSQL don't check for syntax error when the application calls SQLPrepare
-      if (global.dbms === 'mssql' || global.dbms === 'postgres') return this.skip();
-      odbc.connect(`${process.env.CONNECTION_STRING}`, (error, connection) => {
-        assert.deepEqual(error, null);
-        connection.createStatement((error1, statement) => {
-          assert.deepEqual(error1, null);
-          assert.notDeepEqual(statement, null);
-          statement.prepare('INSERT INTO dummy123.asdtable456 VALUES(?zzszzzz ?, ?)', (error2) => {
-            assert.notDeepEqual(error2, null);
-            assert.deepEqual(error2 instanceof Error, true);
-            connection.close((error3) => {
-              assert.deepEqual(error3, null);
-              done();
-            });
-          });
-        });
-      });
-    });
-    it('...should return an error with a blank SQL string', function (done) {
-      // SQL Server and PostgreSQL don't check for syntax error when the application calls SQLPrepare
-      if (global.dbms === 'mssql' || global.dbms === 'postgres') return this.skip();
-      odbc.connect(`${process.env.CONNECTION_STRING}`, (error, connection) => {
-        assert.deepEqual(error, null);
-        connection.createStatement((error1, statement) => {
-          assert.deepEqual(error1, null);
-          assert.notDeepEqual(statement, null);
-          statement.prepare('', (error2) => {
-            assert.notDeepEqual(error2, null);
-            assert.deepEqual(error2 instanceof Error, true);
-            connection.close((error3) => {
-              assert.deepEqual(error3, null);
-              done();
-            });
-          });
-        });
-      });
-    });
-  }); // '...with callbacks...'
   describe('...with promises...', () => {
     it('...should prepare a valid SQL string', async () => {
       assert.doesNotReject(async () => {

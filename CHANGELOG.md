@@ -1,6 +1,16 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [3.0.0-goalpha.1]
+### Changed
+- Replaced the C++ N-API addon with a Go sidecar process, so a crashing ODBC driver no longer takes
+  the application down with it. See `docs/goPort.md`
+- **Breaking:** removed the callback API. Every asynchronous function returns a Promise
+- **Breaking:** requires Node 24
+- **Breaking:** corrected the error messages inherited from the addon, including the stray `}` in the
+  bind mismatch and the names of C++ classes that no longer exist. `odbcErrors[].state` is unchanged
+- Dropped the `async` and `dotenv` dependencies; the package now has none
+
 ## [2.7.0]
 ### Changed
 - Replaced `@mapbox/node-pre-gyp` with `prebuildify` + `node-gyp-build` for native addon distribution

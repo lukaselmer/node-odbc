@@ -97,6 +97,26 @@ application that consumes it depend on it:
   `ColumnSize == 0`, the `HY092` tolerance when a driver rejects row-array binding, `01S02`
   fetch-size substitution, and the 4D date/time column size floors.
 
+## The JavaScript layer
+
+`3.0.0` targets Node 24 and drops the callback API: every asynchronous function returns a Promise.
+That removed the duplicated callback and Promise paths through `Connection`, `Statement`, `Cursor`
+and `Pool`, and with them the layer that existed only to imitate the addon's callback shape, so the
+classes now talk to the sidecar client directly.
+
+| File            | Before | After |
+| --------------- | -----: | ----: |
+| `Connection.js` |    559 |   196 |
+| `Pool.js`       |    467 |   187 |
+| `Statement.js`  |    240 |   111 |
+| `Cursor.js`     |     92 |    46 |
+
+Calling a function with the wrong signature still throws, because that is a mistake in the calling
+code; everything else, including using a closed connection, rejects.
+
+`async` and `dotenv` are no longer dependencies: `Promise.all` replaces the first, and Node's own
+`process.loadEnvFile()` the second.
+
 ## Error messages that changed
 
 Callers dispatch on `odbcErrors[].state`, the SQLSTATE, not on the message text, so `3.0.0` corrects
@@ -118,14 +138,15 @@ the messages the addon had accumulated rather than carrying the typos forward:
 `DBMS=postgres npm test` runs the existing mocha suite through unixODBC against a local PostgreSQL.
 Both implementations were run against the same database state:
 
-| Build | passing | pending | failing |
-| ----- | ------: | ------: | ------: |
-| C++   |     171 |      23 |       2 |
-| Go    |     172 |      23 |       1 |
+| Build            | passing | pending | failing |
+| ---------------- | ------: | ------: | ------: |
+| C++              |     171 |      23 |       2 |
+| Go               |     172 |      23 |       1 |
+| Go, promise-only |      92 |       6 |       1 |
 
-The one remaining failure is `callProcedure` against a procedure that the PostgreSQL driver does not
-report through `SQLProcedures`; the C++ build fails it identically, with the same message. The
-second C++ failure is a flaky prepared-statement test.
+The suite shrank with the callback API it was testing. The remaining failure asserts that the pool
+holds `initialSize` connections the moment `pool()` resolves, which contradicts the documented
+behaviour of resolving after the first connection; it fails on the C++ build too.
 
 ### Ingres
 
