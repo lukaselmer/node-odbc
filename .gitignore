@@ -8,3 +8,12 @@ core*
 build*/
 lib/bindings
 prebuilds
+/target
+
+# Ingres test credentials, fetched from the cluster secret
+.ingres.env
+qemu_*.core
+
+# agent scratch
+.scratch_*
+baseline_test_output.txt
