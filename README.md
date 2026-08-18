@@ -6,14 +6,14 @@ An asynchronous interface for Node.js to unixODBC and its supported drivers.
 
 ## Requirements
 
-- unixODBC binaries and development libraries for module compilation
-  - on Ubuntu/Debian `sudo apt-get install unixodbc unixodbc-dev`
-  - on RedHat/CentOS `sudo yum install unixODBC unixODBC-devel`
+- unixODBC binaries
+  - on Ubuntu/Debian `sudo apt-get install unixodbc`
+  - on RedHat/CentOS `sudo yum install unixODBC`
   - on OSX
     - using macports.org `sudo port unixODBC`
     - using brew `brew install unixODBC`
   - on FreeBSD from ports `cd /usr/ports/databases/unixODBC; make install`
-  - on IBM i `yum install unixODBC unixODBC-devel` (requires [yum](http://ibm.biz/ibmi-rpms))
+  - on IBM i `yum install unixODBC` (requires [yum](http://ibm.biz/ibmi-rpms))
 - ODBC drivers for target database
 - properly configured odbc.ini and odbcinst.ini.
 
@@ -21,14 +21,12 @@ An asynchronous interface for Node.js to unixODBC and its supported drivers.
 
 ## Node.js Version Support
 
-This package is a native addon written in C++ using
-[node-addon-api](https://github.com/nodejs/node-addon-api). Like
-`node-addon-api`, `node-odbc` only supports the active LTS Node.js versions.
+The ODBC work runs in a sidecar process written in Go, which ships as a prebuilt binary, so
+installing this package compiles nothing.
 
-Currently supported versions include:
-
-- Node.js 24
-- Node.js 22
+The package is **ES modules only** and needs **Node.js 24 or newer**. CommonJS callers can still
+`require()` it, because Node loads a synchronous ES module that way, but `import` is the supported
+form and the one the examples use.
 
 ---
 
@@ -219,7 +217,7 @@ In order to get a connection, you must use the `.connect` function exported from
 #### Examples:
 
 ```javascript
-const odbc = require('@lukaselmer/odbc');
+import * as odbc from '@lukaselmer/odbc';
 
 async function connectToDatabase() {
   const connection1 = await odbc.connect('DSN=MYDSN');
@@ -255,7 +253,7 @@ Run a query on the database. Can be passed an SQL string with parameter markers 
   - `initialBufferSize`: Sets the initial buffer size (in bytes) for storing data from SQL_LONG* data fields. Useful for avoiding resizes if buffer size is known before the call.
 
 ```JavaScript
-const odbc = require('@lukaselmer/odbc');
+import * as odbc from '@lukaselmer/odbc';
 const connection = await odbc.connect(connectionString);
 const result = await connection.query('SELECT * FROM QIWS.QCUSTCDT');
 console.log(result);
@@ -277,7 +275,7 @@ Calls a database procedure, returning the results in a [result array](#result-ar
 #### Examples:
 
 ```javascript
-const odbc = require('@lukaselmer/odbc');
+import * as odbc from '@lukaselmer/odbc';
 
 // can only use await keyword in an async function
 async function callProcedureExample() {
@@ -299,7 +297,7 @@ Returns a [Statement](#Statement) object from the connection.
 #### Examples:
 
 ```javascript
-const odbc = require('@lukaselmer/odbc');
+import * as odbc from '@lukaselmer/odbc';
 
 // can only use await keyword in an async function
 async function statementExample() {
@@ -327,7 +325,7 @@ Returns information about the table specified in the parameters by calling the O
 #### Examples:
 
 ```javascript
-const odbc = require('@lukaselmer/odbc');
+import * as odbc from '@lukaselmer/odbc';
 
 // can only use await keyword in an async function
 async function getTables() {
@@ -356,7 +354,7 @@ Returns information about the columns specified in the parameters by calling the
 #### Examples:
 
 ```javascript
-const odbc = require('@lukaselmer/odbc');
+import * as odbc from '@lukaselmer/odbc';
 
 // can only use await keyword in an async function
 async function getColumns() {
@@ -386,7 +384,7 @@ Sets the transaction isolation level for the connection, which determines what d
 #### Examples:
 
 ```javascript
-const odbc = require('@lukaselmer/odbc');
+import * as odbc from '@lukaselmer/odbc';
 
 // can only use await keyword in an async function
 async function isolationLevel() {
@@ -407,7 +405,7 @@ Begins a transaction on the connection. The transaction can be committed by call
 #### Examples:
 
 ```javascript
-const odbc = require('@lukaselmer/odbc');
+import * as odbc from '@lukaselmer/odbc';
 
 // can only use await keyword in an async function
 async function transaction() {
@@ -428,7 +426,7 @@ Commits an open transaction. If called on a connection that doesn't have an open
 #### Examples:
 
 ```javascript
-const odbc = require('@lukaselmer/odbc');
+import * as odbc from '@lukaselmer/odbc';
 
 // can only use await keyword in an async function
 async function commitTransaction() {
@@ -451,7 +449,7 @@ Rolls back an open transaction. If called on a connection that doesn't have an o
 #### Examples:
 
 ```javascript
-const odbc = require('@lukaselmer/odbc');
+import * as odbc from '@lukaselmer/odbc';
 
 // can only use await keyword in an async function
 async function rollbackTransaction() {
@@ -476,7 +474,7 @@ Cancels all operations currently running on the connection (queries and procedur
 #### Examples:
 
 ```javascript
-const odbc = require('odbc');
+import * as odbc from '@lukaselmer/odbc';
 
 // can only use await keyword in an async function
 async function cancelExample() {
@@ -509,7 +507,7 @@ Closes an open connection. Any transactions on the connection that have not been
 #### Examples:
 
 ```javascript
-const odbc = require('@lukaselmer/odbc');
+import * as odbc from '@lukaselmer/odbc';
 
 // can only use await keyword in an async function
 async function closeConnection() {
@@ -548,7 +546,7 @@ Note that `odbc.pool` resolves as soon as it has created 1 connection. It will c
 #### Examples:
 
 ```JavaScript
-const odbc = require('@lukaselmer/odbc');
+import * as odbc from '@lukaselmer/odbc';
 
 // can only use await keyword in an async function
 async function createPool() {
@@ -566,7 +564,7 @@ Returns a [Connection](#connection) object for you to use from the Pool. Doesn't
 #### Examples:
 
 ```javascript
-const odbc = require('@lukaselmer/odbc');
+import * as odbc from '@lukaselmer/odbc';
 
 // can only use await keyword in an async function
 async function connectExample() {
@@ -597,7 +595,7 @@ Utility function to execute a query on any open connection in the pool. Will get
 #### Examples:
 
 ```javascript
-const odbc = require('@lukaselmer/odbc');
+import * as odbc from '@lukaselmer/odbc';
 
 // can only use await keyword in an async function
 async function queryExample() {
@@ -618,7 +616,7 @@ Closes the entire pool of currently unused connections. Will not close connectio
 #### Examples:
 
 ```javascript
-const odbc = require('@lukaselmer/odbc');
+import * as odbc from '@lukaselmer/odbc';
 
 // can only use await keyword in an async function
 async function closeExample() {
@@ -653,7 +651,7 @@ Prepares an SQL statement, with or without parameters (?) to bind to.
 #### Examples:
 
 ```javascript
-const odbc = require('@lukaselmer/odbc');
+import * as odbc from '@lukaselmer/odbc';
 
 // can only use await keyword in an async function
 async function prepareExample() {
@@ -679,7 +677,7 @@ Binds an array of values to the parameters on the prepared SQL statement. Cannot
 #### Examples:
 
 ```javascript
-const odbc = require('@lukaselmer/odbc');
+import * as odbc from '@lukaselmer/odbc';
 
 // can only use await keyword in an async function
 async function bindExample() {
@@ -711,7 +709,7 @@ Executes the prepared and optionally bound SQL statement.
 #### Examples:
 
 ```javascript
-const odbc = require('@lukaselmer/odbc');
+import * as odbc from '@lukaselmer/odbc';
 
 // can only use await keyword in an async function
 async function executeExample() {
@@ -738,7 +736,7 @@ Cancels any operation currently running on the Statement (e.g. a long `.execute(
 #### Examples:
 
 ```javascript
-const odbc = require('odbc');
+import * as odbc from '@lukaselmer/odbc';
 
 // can only use await keyword in an async function
 async function cancelExample() {
@@ -774,7 +772,7 @@ Closes the Statement, freeing the statement handle. Running functions on the sta
 #### Examples:
 
 ```javascript
-const odbc = require('@lukaselmer/odbc');
+import * as odbc from '@lukaselmer/odbc';
 
 // can only use await keyword in an async function
 async function executeExample() {
@@ -810,7 +808,7 @@ Asynchronously returns the next chunk of rows from the result set and returns th
 #### Examples:
 
 ```javascript
-const odbc = require('@lukaselmer/odbc');
+import * as odbc from '@lukaselmer/odbc';
 
 // can only use await keyword in an async function
 async function cursorExample() {
@@ -837,7 +835,7 @@ None
 #### Examples:
 
 ```javascript
-const odbc = require('@lukaselmer/odbc');
+import * as odbc from '@lukaselmer/odbc';
 
 // can only use await keyword in an async function
 async function cursorExample() {
@@ -863,7 +861,7 @@ Closes the statement that the cursor was generated from, and by extension the cu
 #### Examples:
 
 ```javascript
-const odbc = require('@lukaselmer/odbc');
+import * as odbc from '@lukaselmer/odbc';
 
 // can only use await keyword in an async function
 async function cursorExample() {

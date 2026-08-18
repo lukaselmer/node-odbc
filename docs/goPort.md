@@ -120,7 +120,8 @@ code; everything else, including using a closed connection, rejects.
 ### Toolchain
 
 The sources are TypeScript under `src/`, built to ESM in `dist/` with declarations, and exposed
-through an `exports` map. `dist/` is generated, so it is not in the repository; the published package
+through an `exports` map. The package is ESM only: there is no CommonJS entry point, and the legacy
+`main` and `types` fields are omitted, since `exports` supersedes them. `dist/` is generated, so it is not in the repository; the published package
 contains it together with the sidecar binaries in `bin/`.
 
 | Concern    | Tool                                              |

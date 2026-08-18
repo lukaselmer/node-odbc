@@ -19,6 +19,10 @@
     {
       "name": "Lee Smith",
       "email": "notwink@gmail.com"
+    },
+    {
+      "name": "Lukas Elmer",
+      "email": "lukas.elmer@gmail.com"
     }
   ],
   "repository": {
@@ -32,8 +36,6 @@
     "CHANGELOG.md"
   ],
   "type": "module",
-  "main": "dist/odbc.js",
-  "types": "dist/odbc.d.ts",
   "exports": {
     ".": {
       "types": "./dist/odbc.d.ts",

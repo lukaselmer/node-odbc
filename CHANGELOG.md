@@ -16,6 +16,8 @@ All notable changes to this project will be documented in this file.
 - Rewrote the JavaScript in TypeScript, published as ESM from `dist/` with an `exports` map and
   generated declarations
 - Replaced Mocha with Vitest, and ESLint and its plugins with `oxlint` and `oxfmt`
+- **Breaking:** the package is ES modules only, exposed through `exports`; the legacy `main` and
+  `types` fields are gone. CommonJS callers can still `require()` it through Node's ESM interop
 
 ## [2.7.0]
 
