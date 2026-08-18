@@ -9,12 +9,12 @@ Ingres.
 `test/manual/ingres-deadlock.mjs` is that run. It covers the scenarios that used to freeze or
 hang the process:
 
-| Scenario | Before | Now |
-| --- | --- | --- |
-| parameterised query the server rejects, then close | froze the process | rejects in ~0.4 s |
-| failed query inside an open transaction, then close | hung | ~0.4 s |
-| 20 sequential connect/query/close cycles | — | ~9 s |
-| 8 concurrent connections | — | ~0.7 s |
+| Scenario                                            | Before            | Now               |
+| --------------------------------------------------- | ----------------- | ----------------- |
+| parameterised query the server rejects, then close  | froze the process | rejects in ~0.4 s |
+| failed query inside an open transaction, then close | hung              | ~0.4 s            |
+| 20 sequential connect/query/close cycles            | —                 | ~9 s              |
+| 8 concurrent connections                            | —                 | ~0.7 s            |
 
 A 50 ms heartbeat runs throughout and is reported at the end; it is the check that the event
 loop never stalled, which is what the original defect actually did.
@@ -28,7 +28,7 @@ SMOKE_CONNECTION_STRING='DSN=your_ingres_dsn' node test/manual/ingres-deadlock.m
 ## Getting a driver
 
 The Actian client ships only as a Linux x86_64 tarball, so the driver cannot be installed on
-macOS and the test has to run on Linux. The addon does not have to be *built* there:
+macOS and the test has to run on Linux. The addon does not have to be _built_ there:
 
 ```sh
 npm run build:linux-x64        # needs zig on PATH

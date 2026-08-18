@@ -1,0 +1,57 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "promise", "import"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "perf": "error",
+    "pedantic": "error"
+  },
+  "env": {
+    "node": true,
+    "es2024": true
+  },
+  "ignorePatterns": [
+    "dist/**",
+    "prebuilds/**",
+    "target/**",
+    "lib/constants.generated.ts",
+    ".github/**"
+  ],
+  "rules": {
+    "typescript/no-explicit-any": "error",
+    "typescript/no-non-null-assertion": "error",
+    "typescript/consistent-type-imports": "error",
+    "typescript/explicit-function-return-type": "error",
+    "eslint/curly": ["error", "multi-line"],
+    "eslint/require-await": "off",
+    "eslint/no-await-in-loop": "off",
+    "import/no-nodejs-modules": "off",
+    "unicorn/prefer-event-target": "off",
+    "eslint/no-ternary": "off",
+    "eslint/no-nested-ternary": "off",
+    "eslint/sort-keys": "off",
+    "eslint/sort-imports": "off",
+    "eslint/id-length": "off",
+    "eslint/one-var": "off",
+    "eslint/func-style": "off",
+    "eslint/capitalized-comments": "off",
+    "eslint/no-magic-numbers": "off",
+    "eslint/init-declarations": "off",
+    "eslint/max-lines-per-function": "off",
+    "eslint/max-depth": "off",
+    "eslint/prefer-named-capture-group": "off",
+    "eslint/no-undefined": "off",
+    "promise/avoid-new": "off",
+    "unicorn/filename-case": "off"
+  },
+  "overrides": [
+    {
+      "files": ["test/**/*.ts"],
+      "rules": {
+        "unicorn/no-useless-undefined": "off",
+        "typescript/no-explicit-any": "off"
+      }
+    }
+  ]
+}

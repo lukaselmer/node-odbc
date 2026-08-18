@@ -4,7 +4,7 @@ daysUntilStale: 90
 daysUntilClose: 14
 
 # Label
-staleLabel: 'stale'
+staleLabel: "stale"
 exemptLabels:
   - confirmed
 

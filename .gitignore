@@ -17,3 +17,6 @@ qemu_*.core
 # agent scratch
 .scratch_*
 baseline_test_output.txt
+
+# build output
+/dist

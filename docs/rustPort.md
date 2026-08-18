@@ -34,6 +34,19 @@ fallback for drivers that reject block fetches. Ingres is exactly the kind of dr
 misbehaves there, and rows are now read one at a time with `SQLGetData`, which is the most
 portable path ODBC offers.
 
+## Layout
+
+```
+src/          Rust: the addon
+lib/          TypeScript: the JavaScript API, bundled to dist/ by tsdown
+test/         vitest suite; test/manual holds scripts that need a database
+scripts/      build helpers, including the constants generator
+```
+
+`lib/constants.generated.ts` is produced from `src/constants.rs` by
+`scripts/generateConstants.mjs`, so the 54 ODBC constant names cannot drift from the values
+Rust exports. It runs as part of `build:ts`.
+
 ## Crate layout
 
 ```
@@ -59,11 +72,11 @@ src/statement.rs   ODBCStatement
 
 `odbc-api` was initially rejected here on two grounds, **both of which were wrong**:
 
-- *"It lacks the catalog functions."* It has `primary_keys`, `foreign_keys`, `columns` and
+- _"It lacks the catalog functions."_ It has `primary_keys`, `foreign_keys`, `columns` and
   `tables`. Only `SQLProcedureColumns`, `SQLSetCursorName` and `SQLCancel` are genuinely
   absent — and all three are needed only by features this release removes, so after the
   scope cut there is no gap at all.
-- *"Borrowed handle lifetimes cannot live in a `'static` napi object."*
+- _"Borrowed handle lifetimes cannot live in a `'static` napi object."_
   `SharedConnection<'env> = Arc<Mutex<Connection<'env>>>` implements `StatementParent`, so
   `into_prepared` yields `Prepared<StatementConnection<SharedConnection<'static>>>` — owned,
   `Send`, `'static`. It solves the problem better than the hand-rolled RAII layer that was
@@ -87,7 +100,7 @@ used the session. Every ODBC call for a connection runs on its own thread, inclu
 `SQLDriverConnect` and the final `SQLDisconnect`, and the thread is joined on `close()` —
 the driver only releases that state once the thread is gone.
 
-The thread *owns* the session rather than sharing it behind a lock, so affinity is checked
+The thread _owns_ the session rather than sharing it behind a lock, so affinity is checked
 at compile time. Statements are held in the session and addressed by id from JavaScript,
 which is why no ODBC handle ever needs to cross a thread boundary.
 
@@ -100,7 +113,7 @@ which is wrong for a pooled application.
 
 Worth noting: our caller passes `pool(connectionString)` as a bare string, so
 `maxSize` is `Number.MAX_SAFE_INTEGER`. The "unbounded threads" follow-up is therefore
-really *set a pool `maxSize`*, not a threading redesign. Because the actor interface is
+really _set a pool `maxSize`_, not a threading redesign. Because the actor interface is
 `enqueue`/`run_if_idle`, moving to option C later changes where the thread comes from and
 nothing else.
 
@@ -148,19 +161,19 @@ froze or hung the process before 2.7.3 — the whole reason for the threading mo
 [ingresTesting.md](./ingresTesting.md), which records both the results and how to repeat
 the run, since neither the driver nor the database is reachable from a laptop.
 
-| Scenario | Before | Now |
-| --- | --- | --- |
-| parameterised query the server rejects, then close | froze the process | rejects in 413 ms |
-| failed query inside an open transaction, then close | hung | 386 ms |
-| 20 sequential connect/query/close cycles | — | 9.4 s |
-| 8 concurrent connections | — | 787 ms |
+| Scenario                                            | Before            | Now               |
+| --------------------------------------------------- | ----------------- | ----------------- |
+| parameterised query the server rejects, then close  | froze the process | rejects in 413 ms |
+| failed query inside an open transaction, then close | hung              | 386 ms            |
+| 20 sequential connect/query/close cycles            | —                 | 9.4 s             |
+| 8 concurrent connections                            | —                 | 787 ms            |
 
 Not yet done: the mocha suite and CI.
 
 ## `connected`, and why it does not simply ask the driver
 
 Only the driver knows whether the link dropped, so `connected` cannot be derived — but it is
-a *synchronous* getter, and the C++ version of this addon showed what happens when such a
+a _synchronous_ getter, and the C++ version of this addon showed what happens when such a
 getter waits for the connection's thread: reading `connection.connected` while
 `SELECT pg_sleep(3)` was in flight blocked Node's main thread for 2801 ms, a process-wide
 stall reachable through ordinary property access.
@@ -192,7 +205,7 @@ expose — its high-level `Connection` yields the handle only through a consumin
 It is replaced by a pool option, because Ingres accepts the setting as ordinary SQL:
 
 ```js
-pool({ connectionString, initialStatements: ['SET SESSION ISOLATION LEVEL READ COMMITTED'] })
+pool({ connectionString, initialStatements: ["SET SESSION ISOLATION LEVEL READ COMMITTED"] });
 ```
 
 The statements run on each newly opened session, before it is handed out. That timing is
@@ -216,11 +229,11 @@ change in behaviour, not a restatement of the status quo, and deserves its own t
 
 The mocha pool tests brush against their own 20-second timeouts. That is not the port:
 
-| | |
-| --- | --- |
-| 10 connections one at a time | 8636 ms (864 ms each) |
-| 10 connections at once | 943 ms (94 ms each) |
-| `isql`, one connection, no Node | 900-1190 ms |
+|                                 |                       |
+| ------------------------------- | --------------------- |
+| 10 connections one at a time    | 8636 ms (864 ms each) |
+| 10 connections at once          | 943 ms (94 ms each)   |
+| `isql`, one connection, no Node | 900-1190 ms           |
 
 A single connect costs about 900 ms against psqlodbc whatever opens it, and `Pool.js` has
 created connections strictly one at a time since long before this work
@@ -235,11 +248,20 @@ rather than hiding inside a rewrite. `test/manual/connectTiming.mjs` reproduces 
 ## Testing locally
 
 ```sh
-cargo test                                     # unit tests, no database needed
+cargo test                                     # Rust unit tests, no database needed
 TEST_CONNECTION_STRING='DSN=PGRUSTPORT;UID=me' cargo test   # adds the live one
-npm run build                                  # build the addon into prebuilds/
-SMOKE_CONNECTION_STRING='DSN=PGRUSTPORT;UID=me' node test/manual/smoke.mjs
+
+npm run build                                  # the addon, into prebuilds/
+npm run build:ts                               # the JavaScript, into dist/
+npm run typecheck && npm run lint && npm run format:check
+
+DBMS=postgres CONNECTION_STRING='DSN=PGRUSTPORT;UID=me' DB_SCHEMA=public \
+  DB_TABLE=odbctests npm test                  # vitest, needs a database
+
+SMOKE_CONNECTION_STRING='DSN=PGRUSTPORT;UID=me' node test/manual/smoke.ts
 ```
+
+Node 24 runs the TypeScript in `test/manual/` directly, so those scripts need no build.
 
 The smoke test needs a table, by default `rustsmoke`:
 
