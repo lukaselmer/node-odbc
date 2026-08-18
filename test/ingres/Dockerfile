@@ -6,7 +6,7 @@
 # odbc.ini selecting it are not in this repository; test/ingres/run.sh copies
 # them into the build context from the directory named by ACTIAN_ASSETS_DIR.
 
-FROM --platform=linux/amd64 golang:1.26-bookworm AS build
+FROM --platform=linux/amd64 golang:1.26 AS build
 
 RUN apt-get update && apt-get install -y --no-install-recommends unixodbc-dev \
   && rm -rf /var/lib/apt/lists/*
@@ -25,13 +25,10 @@ ENV ODBCSYSINI=/etc/odbc
 ENV ODBCINI=/etc/odbc/odbc.ini
 ENV II_LOG=/tmp
 
-# The Actian driver needs a newer libstdc++ than bookworm ships.
-RUN echo 'deb http://deb.debian.org/debian trixie main' > /etc/apt/sources.list.d/trixie.list \
-  && apt-get update -y \
-  && apt-get install -y --no-install-recommends libstdc++6 -t trixie \
-  && rm /etc/apt/sources.list.d/trixie.list \
-  && apt-get update -y \
-  && apt-get install -y --no-install-recommends unixodbc sudo procps \
+# The Actian driver needs a newer libstdc++ than bookworm shipped, which the
+# current base provides itself.
+RUN apt-get update -y \
+  && apt-get install -y --no-install-recommends libstdc++6 unixodbc sudo procps \
   && rm -rf /var/lib/apt/lists/*
 
 # The Actian installer expects a dedicated owner account and uses sudo.
