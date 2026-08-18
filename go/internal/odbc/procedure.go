@@ -28,7 +28,7 @@ func (c *Connection) CallProcedure(catalog, schema *string, name string, values 
 	}
 	if len(directions) != len(values) {
 		return nil, newErrorWithoutDiagnostics(
-			"[odbc] The number of parameters the procedure expects and and the number of passed parameters is not equal",
+			"[odbc] The number of parameters the procedure expects and the number of passed parameters is not equal",
 		)
 	}
 
@@ -58,7 +58,7 @@ func (s *statement) requireProcedureExists(catalog, schema *string, name, qualif
 	}
 	if len(rows) == 0 {
 		return newErrorWithoutDiagnostics(
-			"[odbc] CallProcedureAsyncWorker::Execute: Stored procedure '" + qualifiedName + "' doesn't exist",
+			"[odbc] Stored procedure '" + qualifiedName + "' doesn't exist",
 		)
 	}
 	return nil

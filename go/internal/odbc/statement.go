@@ -189,7 +189,7 @@ func (s *statement) parameterMarkerCount() (int, error) {
 	var count api.SQLSMALLINT
 	ret := api.SQLNumParams(s.handle, &count)
 	if !odbcapi.Succeeded(int16(ret)) {
-		return 0, s.newError("[odbc] Error getting information about the number of parameter markers in the statment")
+		return 0, s.newError("[odbc] Error getting information about the number of parameter markers in the statement")
 	}
 	return int(count), nil
 }

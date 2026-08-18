@@ -76,11 +76,10 @@ func TestDecodeUtf16DecodesSurrogatePairs(t *testing.T) {
 	}
 }
 
-func TestParameterCountMismatchKeepsTheOriginalMessage(t *testing.T) {
+func TestParameterCountMismatchNamesBothCounts(t *testing.T) {
 	got := parameterCountMismatchMessage(2, 3)
 
-	want := "[node-odbc] Error in Statement::BindAsyncWorker::Bind: The number of parameters in " +
-		"the prepared statement (2) doesn't match the number of parameters passed to bind (3}."
+	want := "[odbc] The prepared statement takes 2 parameters, but 3 were passed to bind."
 	if got != want {
 		t.Fatalf("got %q, want %q", got, want)
 	}

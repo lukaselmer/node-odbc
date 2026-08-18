@@ -86,16 +86,30 @@ Everything else (`null`, number, string, boolean) maps directly.
 
 ## Behaviour that must be preserved
 
-The port reproduces the observable behaviour of the C++ exactly, including its quirks, because the
-test suite and `apps/<app>` in the assets repo depend on it:
+The port reproduces the observable behaviour of the C++, because the test suite and
+`apps/<app>` in the assets repo depend on it:
 
 - result arrays carry `count`, `columns`, `statement`, `parameters` and `return` as properties;
-- errors carry `odbcErrors` with `state`, `code` and `message`, and the same message strings;
+- errors carry `odbcErrors` with `state`, `code` and `message`;
 - the `SQL_BIGINT`/binary/decimal conversions, the chunked `SQLGetData` path and the
   `initialBufferSize` option;
 - the driver workarounds: forced `SQLGetData` mode for `(max)`-style columns reporting
   `ColumnSize == 0`, the `HY092` tolerance when a driver rejects row-array binding, `01S02`
   fetch-size substitution, and the 4D date/time column size floors.
+
+## Error messages that changed
+
+Callers dispatch on `odbcErrors[].state`, the SQLSTATE, not on the message text, so `3.0.0` corrects
+the messages the addon had accumulated rather than carrying the typos forward:
+
+| C++                                                                                     | Go                                                                    |
+| --------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `[node-odbc] Error in Statement::BindAsyncWorker::Bind: The number of parameters in the prepared statement (2) doesn't match the number of parameters passed to bind (3}.` | `[odbc] The prepared statement takes 2 parameters, but 3 were passed to bind.` |
+| `[odbc] CallProcedureAsyncWorker::Execute: Stored procedure 'x' doesn't exist`           | `[odbc] Stored procedure 'x' doesn't exist`                           |
+| `... number of parameter markers in the statment`                                        | `... number of parameter markers in the statement`                    |
+| `... the procedure expects and and the number of passed parameters`                      | `... the procedure expects and the number of passed parameters`       |
+| `[odbc] Error setting retrieving the changed login timeout`                              | `[odbc] Error retrieving the changed login timeout`                   |
+| `[odbc] Error closing the Statement`                                                     | `[odbc] Error closing the statement`                                  |
 
 ## Verification
 

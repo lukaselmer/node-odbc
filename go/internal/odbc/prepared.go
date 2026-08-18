@@ -59,11 +59,9 @@ func (s *Statement) Bind(values []any) error {
 	return nil
 }
 
-// The trailing brace is what the addon emitted; it is kept so that callers
-// matching on the message keep working.
 func parameterCountMismatchMessage(expected, actual int) string {
-	return "[node-odbc] Error in Statement::BindAsyncWorker::Bind: The number of parameters in the prepared statement (" +
-		strconv.Itoa(expected) + ") doesn't match the number of parameters passed to bind (" + strconv.Itoa(actual) + "}."
+	return "[odbc] The prepared statement takes " + strconv.Itoa(expected) +
+		" parameters, but " + strconv.Itoa(actual) + " were passed to bind."
 }
 
 func (s *Statement) Execute(options QueryOptions) (*Result, *Cursor, error) {
@@ -117,7 +115,7 @@ func (s *Statement) Close() error {
 	handleMutex.Unlock()
 
 	if !odbcapi.Succeeded(int16(ret)) {
-		return s.statement.newError("[odbc] Error closing the Statement")
+		return s.statement.newError("[odbc] Error closing the statement")
 	}
 	s.statement.handle = nil
 	s.statement.free()

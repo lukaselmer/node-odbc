@@ -122,7 +122,7 @@ func (c *Connection) applyTimeouts() error {
 func (c *Connection) readSubstitutedLoginTimeout() error {
 	value, ret := odbcapi.SQLGetConnectAttrUint32(c.handle, odbcapi.SQLAttrLoginTimeout)
 	if !odbcapi.Succeeded(int16(ret)) {
-		return c.newError("[odbc] Error setting retrieving the changed login timeout")
+		return c.newError("[odbc] Error retrieving the changed login timeout")
 	}
 	c.options.LoginTimeout = value
 	return nil
