@@ -1,6 +1,27 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [3.0.0]
+### Changed
+- Native addon rewritten in Rust
+
+### Added
+- `initialStatements` pool option, running SQL on each new connection before it is handed out
+
+### Removed
+- **The callback API.** Every asynchronous method returns a Promise; Node 24 is the minimum
+- `dotenv` from the test dependencies, replaced by Node's own `process.loadEnvFile`
+- `Connection.setIsolationLevel` — use `initialStatements` with `SET SESSION ISOLATION LEVEL <level>`
+- `Cursor` API (`connection.query`/`statement.execute` no longer accept `cursor` or `fetchSize` options and never return a `Cursor`)
+- `connection.callProcedure`
+- `connection.primaryKeys`
+- `connection.foreignKeys`
+- `connection.cancel`
+- `connection.getUsername`
+- `connection.autocommit` getter
+- `statement.cancel`
+- `timeout` and `initialBufferSize` query options
+
 ## [2.7.0]
 ### Changed
 - Replaced `@mapbox/node-pre-gyp` with `prebuildify` + `node-gyp-build` for native addon distribution
