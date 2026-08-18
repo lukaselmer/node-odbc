@@ -1,6 +1,6 @@
 {
   "name": "@lukaselmer/odbc",
-  "version": "3.0.0-rstalpha.1",
+  "version": "3.0.0-rustalpha.1",
   "description": "unixodbc bindings for node",
   "homepage": "https://github.com/lukaselmer/node-odbc",
   "bugs": {
@@ -27,7 +27,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git://github.com/lukaselmer/node-odbc.git"
+    "url": "git+https://github.com/lukaselmer/node-odbc.git"
   },
   "directories": {
     "lib": "."

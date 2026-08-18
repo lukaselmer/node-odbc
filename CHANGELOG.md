@@ -2,7 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
-## [3.0.0]
+## [3.0.0-rustalpha.1] - 2026-08-19
+
+First alpha of the Rust addon. Published under the `alpha` dist-tag.
 
 ### Changed
 
@@ -11,7 +13,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - `initialStatements` pool option, running SQL on each new connection before it is handed out
-- TypeScript sources, shipped as ESM and CommonJS with an `exports` map and generated declarations
+- TypeScript sources, shipped as ESM with an `exports` map and generated declarations
 
 ### Removed
 
@@ -29,6 +31,8 @@ All notable changes to this project will be documented in this file.
 - `connection.autocommit` getter
 - `statement.cancel`
 - `timeout` and `initialBufferSize` query options
+- The CommonJS build. Node can `require()` an ES module graph, so `require('@lukaselmer/odbc')` still works
+- `node-gyp-build`, the last runtime dependency; the addon is now loaded directly
 
 ## [2.7.0]
 

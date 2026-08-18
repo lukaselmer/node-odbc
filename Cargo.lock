@@ -881,7 +881,7 @@ dependencies = [
 
 [[package]]
 name = "odbc-napi"
-version = "3.0.0-rstalpha.1"
+version = "3.0.0-rustalpha.1"
 dependencies = [
  "napi",
  "napi-build",

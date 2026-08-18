@@ -50,6 +50,11 @@ jobs:
       - name: Verify the package before publishing
         run: cargo test && npm run typecheck && npm run lint
 
+      # Importing the entry point loads the addon at module scope, so this fails
+      # here rather than on a user's machine if the artefact or loader is wrong.
+      - name: Check the built package loads
+        run: node -e "import('./dist/index.js').then(m => { if (typeof m.connect !== 'function') throw new Error('connect is missing') })"
+
       - name: Choose the dist-tag
         run: .github/npm-tag.sh "$(node -p 'require("./package.json").version')" >> "$GITHUB_ENV"
 

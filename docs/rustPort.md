@@ -1,6 +1,6 @@
 # Rust port of the native addon
 
-`3.0.0-rstalpha.1` replaces the C++ N-API addon (`src/*.cpp`, ~6.6k lines) with Rust, and
+`3.0.0-rustalpha.1` replaces the C++ N-API addon (`src/*.cpp`, ~6.6k lines) with Rust, and
 narrows the public API to what we actually use.
 
 ## Why

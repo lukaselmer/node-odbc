@@ -1,6 +1,6 @@
 [package]
 name = "odbc-napi"
-version = "3.0.0-rstalpha.1"
+version = "3.0.0-rustalpha.1"
 edition = "2024"
 rust-version = "1.90"
 license = "MIT"
