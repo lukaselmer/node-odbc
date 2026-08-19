@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.0-goalpha.2]
+
+### Added
+
+- `initialStatements`, SQL run on each new pooled connection before it is handed out, for session
+  setup such as `SET SESSION ISOLATION LEVEL READ COMMITTED`. A connection whose initial statements
+  fail is closed and never used.
+
+### Fixed
+
+- Parameters a driver declines to describe. Ingres answers `SQL_DEFAULT` for a placeholder it cannot
+  place, `LIMIT ?` being the one that matters here, and binding that was rejected with `HY004`. The
+  type is now derived from the value instead.
+- Whole numbers are bound as `SQL_INTEGER` when they fit rather than always as `SQL_BIGINT`, which
+  Ingres rejects where its grammar demands an integer.
+- An `INOUT` procedure parameter keeps the value it was given when the procedure declares a
+  different integer width, which the previous byte-for-byte copy silently dropped.
+- The pool hands out connections in rotation. It took and returned them at the same end, so a caller
+  holding one connection at a time reused it forever while the rest sat idle until the network
+  dropped them.
+- `maxSize` is reached exactly. The pool grew only when a whole `incrementSize` fit, so any `maxSize`
+  that was not a multiple of it was never reached.
+
+### Known gaps
+
+- `shrink` is accepted and does nothing; the pool does not close idle connections yet. Rotation
+  makes this far less pressing, since every connection is used in turn rather than left to idle.
+
 ## [3.0.0-goalpha.1]
 
 ### Changed

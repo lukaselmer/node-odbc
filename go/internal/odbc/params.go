@@ -1,6 +1,7 @@
 package odbc
 
 import (
+	"math"
 	"unsafe"
 
 	"github.com/alexbrainman/odbc/api"
@@ -54,8 +55,58 @@ func (s *statement) describeParameters() error {
 		parameter.columnSize = uint64(columnSize)
 		parameter.decimalDigits = int16(decimalDigits)
 		parameter.nullable = int16(nullable)
+
+		if !describesAType(parameter.parameterType) {
+			describeFromValue(parameter)
+		}
 	}
 	return nil
+}
+
+// describesAType reports whether the driver named a type it can bind. Ingres
+// answers SQL_DEFAULT for a placeholder it cannot place, such as the one in
+// `LIMIT ?`, and binding that is rejected outright.
+func describesAType(parameterType int16) bool {
+	return parameterType != odbcapi.SQLDefaultType && parameterType != odbcapi.SQLUnknownType
+}
+
+// describeFromValue falls back to the type the value was built as, which is the
+// best guess available once the driver has declined to describe it.
+func describeFromValue(p *parameter) {
+	p.parameterType = sqlTypeOf(p.valueType)
+	p.decimalDigits = 0
+	p.nullable = 0
+	p.columnSize = uint64(sizeOf(p))
+}
+
+func sqlTypeOf(valueType int16) int16 {
+	switch valueType {
+	case odbcapi.SQLCSshort:
+		return odbcapi.SQLSmallint
+	case odbcapi.SQLCSlong:
+		return odbcapi.SQLInteger
+	case odbcapi.SQLCSbigint:
+		return odbcapi.SQLBigint
+	case odbcapi.SQLCDouble:
+		return odbcapi.SQLDouble
+	case odbcapi.SQLCBit:
+		return odbcapi.SQLBit
+	case odbcapi.SQLCBinary:
+		return odbcapi.SQLVarbinary
+	default:
+		return odbcapi.SQLVarchar
+	}
+}
+
+// sizeOf is the column size the driver expects, which only matters for the
+// variable length types; a fixed one takes its size from the type itself.
+func sizeOf(p *parameter) int {
+	switch p.valueType {
+	case odbcapi.SQLCChar, odbcapi.SQLCBinary:
+		return p.bufferLength
+	default:
+		return 0
+	}
 }
 
 func (s *statement) bindDescribedParameters() error {
@@ -104,11 +155,29 @@ func nullParameter() *parameter {
 	return &parameter{valueType: odbcapi.SQLCDefault, indicator: newIndicator(odbcapi.SQLNullData)}
 }
 
+// numberParameter picks the narrowest C type that holds the value. JavaScript
+// has one number type and a driver does not: Ingres rejects a floating point
+// host variable where its grammar demands an integer, and rejects a 64-bit one
+// there too, so anything that fits goes out as a plain integer.
 func numberParameter(value float64) *parameter {
-	if whole := int64(value); float64(whole) == value {
-		return bigIntParameter(whole, false)
+	whole := int64(value)
+	if float64(whole) != value {
+		return doubleParameter(value)
 	}
-	return doubleParameter(value)
+	if whole >= math.MinInt32 && whole <= math.MaxInt32 {
+		return integerParameter(int32(whole))
+	}
+	return bigIntParameter(whole, false)
+}
+
+func integerParameter(value int32) *parameter {
+	buffer := odbcapi.Alloc(sqlIntegerSize)
+	*(*int32)(buffer) = value
+	return &parameter{
+		valueType: odbcapi.SQLCSlong,
+		buffer:    buffer,
+		indicator: newIndicator(0),
+	}
 }
 
 func bigIntParameter(value int64, isBigInt bool) *parameter {

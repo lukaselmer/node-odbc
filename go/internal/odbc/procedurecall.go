@@ -67,10 +67,8 @@ func widenForOutput(built *parameter, description procedureParameter) {
 	valueType, size := outputBuffer(description)
 	buffer := odbcapi.Alloc(size)
 
-	if built.buffer != nil && built.valueType == valueType {
-		copy(unsafe.Slice((*byte)(buffer), size), unsafe.Slice((*byte)(built.buffer), min(size, built.bufferLength)))
-	}
 	if built.buffer != nil {
+		carryInputValue(built, buffer, valueType, size)
 		odbcapi.Free(built.buffer)
 	}
 
@@ -78,6 +76,49 @@ func widenForOutput(built *parameter, description procedureParameter) {
 	built.bufferLength = size
 	built.valueType = valueType
 	built.isBigInt = description.dataType == odbcapi.SQLBigint
+}
+
+// carryInputValue moves the value an INOUT parameter was given into the buffer
+// the procedure will write back. A whole number is bound as the narrowest
+// integer that holds it, which need not be the width the procedure declares, so
+// integers are converted rather than copied byte for byte.
+func carryInputValue(built *parameter, buffer unsafe.Pointer, valueType int16, size int) {
+	if value, ok := integerValueOf(built); ok {
+		if writeInteger(buffer, valueType, value) {
+			return
+		}
+	}
+	if built.valueType != valueType {
+		return
+	}
+	copy(unsafe.Slice((*byte)(buffer), size), unsafe.Slice((*byte)(built.buffer), min(size, built.bufferLength)))
+}
+
+func integerValueOf(built *parameter) (int64, bool) {
+	switch built.valueType {
+	case odbcapi.SQLCSshort:
+		return int64(*(*int16)(built.buffer)), true
+	case odbcapi.SQLCSlong:
+		return int64(*(*int32)(built.buffer)), true
+	case odbcapi.SQLCSbigint:
+		return *(*int64)(built.buffer), true
+	default:
+		return 0, false
+	}
+}
+
+func writeInteger(buffer unsafe.Pointer, valueType int16, value int64) bool {
+	switch valueType {
+	case odbcapi.SQLCSshort:
+		*(*int16)(buffer) = int16(value)
+	case odbcapi.SQLCSlong:
+		*(*int32)(buffer) = int32(value)
+	case odbcapi.SQLCSbigint:
+		*(*int64)(buffer) = value
+	default:
+		return false
+	}
+	return true
 }
 
 func outputBuffer(description procedureParameter) (int16, int) {

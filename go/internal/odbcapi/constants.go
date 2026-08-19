@@ -86,6 +86,8 @@ const (
 
 // SQL data types.
 const (
+	SQLUnknownType   = C.SQL_UNKNOWN_TYPE
+	SQLDefaultType   = C.SQL_DEFAULT
 	SQLChar          = C.SQL_CHAR
 	SQLVarchar       = C.SQL_VARCHAR
 	SQLLongvarchar   = C.SQL_LONGVARCHAR

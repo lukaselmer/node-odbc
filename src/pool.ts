@@ -12,6 +12,12 @@ export interface PoolParameters extends ConnectionParameters {
   reuseConnections?: boolean;
   shrink?: boolean;
   maxActivelyConnecting?: number;
+  /**
+   * SQL run on each new connection before it is handed out, for session setup
+   * such as `SET SESSION ISOLATION LEVEL READ COMMITTED`. A connection whose
+   * initial statements fail is closed and never used.
+   */
+  initialStatements?: string[];
 }
 
 /** A connection handed out by the pool, which can still be really closed. */
@@ -60,6 +66,7 @@ export class Pool {
   private readonly incrementSize: number;
   private readonly maxSize: number;
   private readonly maxActivelyConnecting: number;
+  private readonly initialStatements: readonly string[];
 
   private isOpen = false;
   private connectionsBeingCreatedCount = 0;
@@ -81,6 +88,7 @@ export class Pool {
     this.incrementSize = config.incrementSize ?? DEFAULTS.incrementSize;
     this.maxSize = config.maxSize ?? DEFAULTS.maxSize;
     this.maxActivelyConnecting = config.maxActivelyConnecting ?? DEFAULTS.maxActivelyConnecting;
+    this.initialStatements = initialStatementsOf(config.initialStatements);
   }
 
   /** Opens the initial connections and verifies that the configuration works. */
@@ -97,10 +105,10 @@ export class Pool {
 
   /** Takes a connection from the pool, waiting for one if none is free. */
   connect(): Promise<Connection> {
-    const free = this.freeConnections.pop();
+    const free = this.freeConnections.shift();
     if (free) return Promise.resolve(free);
 
-    if (this.shouldGrow()) this.increasePoolSize(this.incrementSize);
+    this.increasePoolSize(this.roomToGrow());
 
     return new Promise<Connection>((resolve, reject) => {
       this.waiting.push({ resolve, reject });
@@ -146,14 +154,17 @@ export class Pool {
     );
   }
 
-  private shouldGrow(): boolean {
-    return (
-      this.connectionsBeingCreatedCount <= this.waiting.length &&
-      this.poolSize + this.connectionsBeingCreatedCount + this.incrementSize <= this.maxSize
-    );
+  // How many connections may still be opened, which is a whole increment while
+  // there is room for one and whatever is left of maxSize otherwise, so that
+  // maxSize is reached exactly rather than only when it is a multiple.
+  private roomToGrow(): number {
+    if (this.connectionsBeingCreatedCount > this.waiting.length) return 0;
+    const room = this.maxSize - this.poolSize - this.connectionsBeingCreatedCount;
+    return Math.max(Math.min(this.incrementSize, room), 0);
   }
 
   private increasePoolSize(count: number): void {
+    if (count <= 0) return;
     this.connectionsBeingCreatedCount += count;
     for (let index = 0; index < count; index++) this.enqueueConnect();
   }
@@ -179,12 +190,32 @@ export class Pool {
   private async openPooledConnection(): Promise<void> {
     try {
       const connection = await openConnection(this.connectionConfig);
+      await this.prepareSession(connection);
       this.connectionsBeingCreatedCount--;
       this.poolSize++;
       this.handOut(this.pooled(connection));
     } catch (error) {
       this.connectionsBeingCreatedCount--;
       this.failWaiting(error as Error);
+    }
+  }
+
+  // Ingres rejects SET SESSION ISOLATION LEVEL and SET LOCKMODE once a
+  // transaction is active, so these run per session rather than per checkout.
+  private async prepareSession(connection: Connection): Promise<void> {
+    try {
+      await this.runInitialStatements(connection);
+    } catch (error) {
+      await closeQuietly(connection);
+      throw error;
+    }
+  }
+
+  private async runInitialStatements(connection: Connection): Promise<void> {
+    for (const sql of this.initialStatements) {
+      // Session setup is ordered, so these cannot run in parallel.
+      // eslint-disable-next-line no-await-in-loop
+      await connection.query(sql);
     }
   }
 
@@ -224,6 +255,27 @@ export class Pool {
   private failWaiting(error: Error): void {
     this.waiting.shift()?.reject(error);
   }
+}
+
+async function closeQuietly(connection: Connection): Promise<void> {
+  try {
+    await connection.close();
+  } catch {
+    // The session is being discarded either way.
+  }
+}
+
+function initialStatementsOf(initialStatements: string[] | undefined): readonly string[] {
+  if (initialStatements === undefined) return [];
+  if (
+    !Array.isArray(initialStatements) ||
+    initialStatements.some((sql) => typeof sql !== 'string')
+  ) {
+    throw new TypeError(
+      'Pool configuration option "initialStatements" must be an array of strings',
+    );
+  }
+  return initialStatements;
 }
 
 function poolConfigOf(connectionStringOrConfig: string | PoolParameters): PoolParameters {

@@ -22,6 +22,8 @@ async function main(): Promise<void> {
   await checkConnects();
   await checkSimpleQuery();
   await checkParameterisedQuery();
+  await checkIntegerGrammarParameter();
+  await checkBigIntParameter();
   await checkSyntaxErrorIsRecoverable();
   await checkTransaction();
   await checkCatalog();
@@ -50,6 +52,27 @@ async function checkParameterisedQuery(): Promise<void> {
     assert.strictEqual(result.length, 1);
     assert.strictEqual(Object.values(result[0] ?? {})[0], 42);
     report('parameterised query');
+  });
+}
+
+// Ingres demands an integer constant here, not just any numeric host variable,
+// so a whole number bound as a double or as a 64-bit integer is rejected.
+async function checkIntegerGrammarParameter(): Promise<void> {
+  await withConnection(async (connection) => {
+    const result = await connection.query(
+      'SELECT table_name FROM iitables ORDER BY table_name LIMIT ? OFFSET ?',
+      [10, 0],
+    );
+    assert.ok(result.length <= 10);
+    report(`LIMIT ? OFFSET ? returned ${result.length} rows`);
+  });
+}
+
+async function checkBigIntParameter(): Promise<void> {
+  await withConnection(async (connection) => {
+    const result = await connection.query('SELECT int8(?) AS big', [9007199254740993n]);
+    assert.strictEqual(result.length, 1);
+    report(`BigInt parameter returned ${String(Object.values(result[0] ?? {})[0])}`);
   });
 }
 
