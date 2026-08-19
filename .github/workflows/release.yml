@@ -6,7 +6,7 @@ on:
 
 permissions:
   contents: write
-  id-token: write # npm provenance
+  id-token: write # OIDC, for npm trusted publishing
 
 jobs:
   release:
@@ -58,10 +58,23 @@ jobs:
       - name: Choose the dist-tag
         run: .github/npm-tag.sh "$(node -p 'require("./package.json").version')" >> "$GITHUB_ENV"
 
+      # Without OIDC support npm falls back to token auth, which on a scoped
+      # package surfaces as a 404 rather than anything naming the cause.
+      - name: Check npm supports trusted publishing
+        run: |
+          installed="$(npm -v)"
+          if [ "$(printf '11.5.1\n%s\n' "$installed" | sort -V | head -1)" != "11.5.1" ]; then
+            echo "npm $installed is too old for trusted publishing; 11.5.1 or later is required" >&2
+            exit 1
+          fi
+          echo "npm $installed supports trusted publishing"
+
+      # No NODE_AUTH_TOKEN: the package is published through npm trusted
+      # publishing, which exchanges the OIDC token above for a short-lived
+      # credential. Provenance is generated automatically, so --provenance
+      # is not passed.
       - name: Publish to npm
-        run: npm publish --provenance --tag "$tag"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --tag "$tag"
 
       - name: Attach the artefact to the release
         uses: softprops/action-gh-release@v3
