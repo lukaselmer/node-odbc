@@ -176,14 +176,20 @@ fn as_input_parameter(parameter: &Parameter) -> Box<dyn InputParameter> {
 /// point host variable where the grammar demands an integer, `LIMIT ?` being the
 /// one this application hits, so a value that is exactly an integer is bound as
 /// one.
-/// JavaScript has one number type; a driver does not. Ingres rejects a floating
-/// point host variable where the grammar demands an integer, `LIMIT ?` being the
-/// one this application hits, so a value that is exactly an integer is bound as
-/// one.
 fn as_number_parameter(value: f64) -> Box<dyn InputParameter> {
     match integral(value) {
-        Some(integral) => Box::new(integral),
+        Some(integral) => as_integer_parameter(integral),
         None => Box::new(value),
+    }
+}
+
+/// The narrowest integer that holds the value. Ingres accepts `SQL_INTEGER`
+/// where it demands an integer but not `SQL_BIGINT`, which is what an `i64`
+/// binds as, so anything that fits is bound as an `i32`.
+fn as_integer_parameter(value: i64) -> Box<dyn InputParameter> {
+    match i32::try_from(value) {
+        Ok(narrow) => Box::new(narrow),
+        Err(_) => Box::new(value),
     }
 }
 
@@ -254,6 +260,21 @@ mod tests {
         assert_eq!(integral(f64::NEG_INFINITY), None);
         assert_eq!(integral(f64::NAN), None);
         assert_eq!(integral(1e30), None);
+    }
+
+    /// Ingres takes SQL_INTEGER where it demands an integer, but not SQL_BIGINT.
+    #[test]
+    fn narrows_an_integer_that_fits() {
+        assert_eq!(i32::try_from(integral(42.0).unwrap()), Ok(42));
+        assert_eq!(
+            i32::try_from(integral(-2147483648.0).unwrap()),
+            Ok(i32::MIN)
+        );
+    }
+
+    #[test]
+    fn keeps_an_integer_too_large_to_narrow() {
+        assert!(i32::try_from(integral(2f64.powi(40)).unwrap()).is_err());
     }
 
     #[test]

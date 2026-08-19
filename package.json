@@ -1,6 +1,6 @@
 {
   "name": "@lukaselmer/odbc",
-  "version": "3.0.0-rustalpha.3",
+  "version": "3.0.0-rustalpha.4",
   "description": "unixodbc bindings for node",
   "homepage": "https://github.com/lukaselmer/node-odbc",
   "bugs": {

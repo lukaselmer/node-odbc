@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.0-rustalpha.4] - 2026-08-19
+
+### Fixed
+
+- Whole numbers are bound as `SQL_INTEGER` rather than `SQL_BIGINT` when they fit. Ingres rejects
+  a `SQL_BIGINT` host variable where its grammar demands an integer, so `LIMIT ?` still failed in
+  `rustalpha.3`, which only stopped binding whole numbers as doubles.
+
 ## [3.0.0-rustalpha.3] - 2026-08-19
 
 ### Fixed

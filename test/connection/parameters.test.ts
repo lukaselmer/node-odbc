@@ -26,19 +26,33 @@ describe('parameter binding', () => {
   })
 
   /**
-   * A whole number has to reach the driver as an integer: Ingres rejects a
-   * floating point host variable where its grammar demands an integer, which
-   * `LIMIT ?` does. PostgreSQL reports the type it was given, and infers
-   * nothing here because the parameter stands alone.
+   * A whole number has to reach the driver as `SQL_INTEGER`: Ingres rejects
+   * both a floating point host variable and a `SQL_BIGINT` one where its
+   * grammar demands an integer, which `LIMIT ?` does. PostgreSQL reports the
+   * type it was given, and infers nothing here because the parameter stands
+   * alone.
    */
   it.skipIf(process.env.DBMS !== 'postgres')('binds a whole number as an integer', async () => {
     const connection = await connect(connectionString())
 
     const rows = await connection.query<{ t: string }>('SELECT pg_typeof(?) AS t', [42])
 
-    expect(firstRow(rows)).toEqual({ T: 'bigint' })
+    expect(firstRow(rows)).toEqual({ T: 'integer' })
     await connection.close()
   })
+
+  /** Beyond `i32` there is no integer type left to narrow to. */
+  it.skipIf(process.env.DBMS !== 'postgres')(
+    'binds a whole number too large for an integer as a bigint',
+    async () => {
+      const connection = await connect(connectionString())
+
+      const rows = await connection.query<{ t: string }>('SELECT pg_typeof(?) AS t', [2 ** 40])
+
+      expect(firstRow(rows)).toEqual({ T: 'bigint' })
+      await connection.close()
+    },
+  )
 
   it.skipIf(process.env.DBMS !== 'postgres')(
     'binds a fractional number without truncating it',
