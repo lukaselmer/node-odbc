@@ -21,12 +21,14 @@ type DiagnosticRecord struct {
 func (e *Error) Error() string { return e.Message }
 
 const (
-	errorMessageBytes  = 2048
-	noErrorInformation = "<No error information available>"
+	initialMessageBytes  = 2048
+	maxMessageBytes      = 32767
+	maxDiagnosticRecords = 64
+	noErrorInformation   = "<No error information available>"
 )
 
-// newError collects every diagnostic record attached to a handle. A handle
-// that reports no diagnostics yields an empty slice, matching the addon.
+// newError collects every diagnostic record attached to a handle, always
+// yielding at least one record.
 func newError(message string, handleType int16, handle api.SQLHANDLE) *Error {
 	return &Error{Message: message, Records: diagnosticsOf(handleType, handle)}
 }
@@ -37,30 +39,69 @@ func newErrorWithoutDiagnostics(message string) *Error {
 	return &Error{Message: message, Records: []DiagnosticRecord{}}
 }
 
+// diagnosticsOf reads every record the driver has for a handle.
+//
+// SQL_DIAG_NUMBER is deliberately not consulted: drivers get it wrong in both
+// directions, so records are read until the driver reports SQL_NO_DATA,
+// bounded in case it never does. A failure always yields at least one record,
+// so that callers reading odbcErrors[0] always find something.
 func diagnosticsOf(handleType int16, handle api.SQLHANDLE) []DiagnosticRecord {
 	records := []DiagnosticRecord{}
 	if handle == nil {
-		return records
+		return append(records, DiagnosticRecord{Message: noErrorInformation})
 	}
 
-	count, ret := odbcapi.SQLGetDiagFieldRecordCount(handleType, handle)
-	if !odbcapi.Succeeded(int16(ret)) {
-		return records
+	for number := 1; number <= maxDiagnosticRecords; number++ {
+		record, ok := diagnosticRecord(handleType, handle, int16(number))
+		if !ok {
+			break
+		}
+		records = append(records, record)
 	}
 
-	for number := int32(1); number <= count; number++ {
-		record, ret := odbcapi.SQLGetDiagRec(handleType, handle, int16(number), errorMessageBytes)
+	if len(records) == 0 {
+		// The driver reported a failure but will not say why.
+		return append(records, DiagnosticRecord{Message: noErrorInformation})
+	}
+	return records
+}
+
+// diagnosticRecord reads one record, growing the buffer until the message fits.
+//
+// The length a driver reports is not reliable: the specification says it is the
+// number of characters available, but some report only what they copied. A
+// completely filled buffer is therefore the only dependable sign of truncation.
+func diagnosticRecord(handleType int16, handle api.SQLHANDLE, number int16) (DiagnosticRecord, bool) {
+	for size := initialMessageBytes; ; {
+		record, ret := odbcapi.SQLGetDiagRec(handleType, handle, number, size)
 		if !odbcapi.Succeeded(int16(ret)) {
-			records = append(records, DiagnosticRecord{Message: noErrorInformation})
+			// SQL_NO_DATA is the normal way out; any other failure is treated
+			// the same way, keeping whatever was already collected.
+			return DiagnosticRecord{}, false
+		}
+
+		if filled(record, size) && size < maxMessageBytes {
+			size = min(grownSize(record, size), maxMessageBytes)
 			continue
 		}
-		records = append(records, DiagnosticRecord{
+
+		return DiagnosticRecord{
 			State:   record.State,
 			Code:    record.Code,
 			Message: record.Message,
-		})
+		}, true
 	}
-	return records
+}
+
+func filled(record odbcapi.DiagnosticRecord, size int) bool {
+	return record.TextLength < 0 || record.TextLength >= size-1
+}
+
+func grownSize(record odbcapi.DiagnosticRecord, size int) int {
+	if required := record.TextLength + 1; required > size*2 {
+		return required
+	}
+	return size * 2
 }
 
 // hasState reports whether any diagnostic on the handle carries the given

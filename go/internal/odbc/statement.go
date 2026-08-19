@@ -320,6 +320,13 @@ func (s *statement) cancel() error {
 // releaseBuffers drops everything tied to one execution while keeping the
 // statement handle, so that a prepared statement can be executed again.
 func (s *statement) releaseBuffers() {
+	// The driver still holds the pointers handed to it by SQLBindCol. Freeing
+	// the buffers while it does makes the next execute or fetch write into
+	// released memory, so tell it to forget them first.
+	if s.handle != nil && len(s.bindings) > 0 {
+		odbcapi.SQLFreeStmt(s.handle, odbcapi.SQLUnbind)
+	}
+
 	for index := range s.bindings {
 		s.bindings[index].free()
 	}

@@ -103,16 +103,20 @@ func SQLDescribeCol(statement api.SQLHSTMT, column uint16, nameLength int) (Colu
 	return description, ret
 }
 
-// DiagnosticRecord is one SQLGetDiagRec entry.
+// DiagnosticRecord is one SQLGetDiagRec entry. TextLength is what the driver
+// reported, which callers need in order to detect a truncated message.
 type DiagnosticRecord struct {
-	State   string
-	Code    int32
-	Message string
+	State      string
+	Code       int32
+	Message    string
+	TextLength int
 }
 
 func SQLGetDiagRec(handleType int16, handle api.SQLHANDLE, record int16, messageBytes int) (DiagnosticRecord, api.SQLRETURN) {
 	state := make([]byte, 6)
-	message := make([]byte, messageBytes)
+	// Allocate more than the driver is told it has, so that one ignoring
+	// BufferLength writes into our slack rather than past the buffer.
+	message := make([]byte, messageBytes+messageBufferSlackBytes)
 	var (
 		nativeError C.SQLINTEGER
 		textLength  C.SQLSMALLINT
@@ -125,17 +129,20 @@ func SQLGetDiagRec(handleType int16, handle api.SQLHANDLE, record int16, message
 		(*C.SQLCHAR)(unsafe.Pointer(&state[0])),
 		&nativeError,
 		(*C.SQLCHAR)(unsafe.Pointer(&message[0])),
-		C.SQLSMALLINT(len(message)),
+		C.SQLSMALLINT(messageBytes),
 		&textLength,
 	))
 
 	diagnostic := DiagnosticRecord{
-		State:   nulTerminated(state),
-		Code:    int32(nativeError),
-		Message: string(message[:clampLength(int(textLength), len(message))]),
+		State:      nulTerminated(state),
+		Code:       int32(nativeError),
+		Message:    nulTerminated(message[:clampLength(int(textLength), messageBytes)]),
+		TextLength: int(textLength),
 	}
 	return diagnostic, ret
 }
+
+const messageBufferSlackBytes = 256
 
 func SQLGetDiagFieldRecordCount(handleType int16, handle api.SQLHANDLE) (int32, api.SQLRETURN) {
 	var count C.SQLINTEGER

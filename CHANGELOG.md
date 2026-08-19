@@ -19,6 +19,34 @@ All notable changes to this project will be documented in this file.
 - **Breaking:** the package is ES modules only, exposed through `exports`; the legacy `main` and
   `types` fields are gone. CommonJS callers can still `require()` it through Node's ESM interop
 
+### Fixed
+
+- Carried over the diagnostics fixes from 2.7.1. The memory-safety defects cannot occur in Go, but
+  the reporting ones were reproduced by the port and are now fixed: `SQL_DIAG_NUMBER` is no longer
+  trusted, long messages are no longer truncated or split, `error.odbcErrors` is never empty, and
+  bound column buffers are unbound before they are released
+
+## [2.7.1]
+
+### Fixed
+
+- Fixed a crash of the whole Node process when a driver reports a failure. Diagnostic records were
+  read without checking the return code of `SQLGetDiagRec` first, which made the addon act on
+  uninitialised memory and either write into a released buffer or compute a negative allocation
+  size. The Ingres/Actian driver hit this on any statement with a SQL syntax error.
+- Fixed fabricated `<No error information available>` entries in `error.odbcErrors`. The number of
+  diagnostic records reported by `SQL_DIAG_NUMBER` is no longer trusted; records are read until the
+  driver reports that there are no more.
+- Fixed long error messages being truncated and split across several `odbcErrors` entries.
+- Fixed `error.odbcErrors` being empty when diagnostic information could not be retrieved, which
+  turned the original failure into a `TypeError` for callers reading `odbcErrors[0]`.
+- Fixed a use-after-free that corrupted the heap: bound column buffers were released without
+  unbinding them from the statement, so the driver kept writing into freed memory. This affected
+  `callProcedure` and cursors, and usually surfaced as an unrelated crash later on.
+- Fixed an unterminated error string in UNICODE builds, and a possible overflow when a driver
+  returns a SQLSTATE longer than five characters.
+- Fixed a leak of the diagnostic record array.
+
 ## [2.7.0]
 
 ### Changed
