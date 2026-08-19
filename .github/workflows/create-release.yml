@@ -12,6 +12,7 @@ jobs:
   build:
     name: Build ${{ matrix.platform }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -28,9 +29,14 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
 
+      # A bare apt-get can sit for hours: it waits on the dpkg lock behind the
+      # runner's own background updates, and prompts when a mirror stalls.
       - name: Install unixODBC
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y unixodbc-dev
+        timeout-minutes: 5
+        run: |
+          sudo apt-get update -o Acquire::Retries=3
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -o Acquire::Retries=3 unixodbc-dev
       - name: Install unixODBC
         if: runner.os == 'macOS'
         run: brew install unixodbc
@@ -57,6 +63,7 @@ jobs:
     name: Publish
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
