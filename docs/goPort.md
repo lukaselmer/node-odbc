@@ -247,6 +247,8 @@ Two things fall out of the split. An application that reaches a sidecar containe
 no binary to keep out of the bundle. And an image that needs only the server installs only the
 server package, rather than pulling the whole thing and deleting the parts it did not want.
 
-The version of the optional dependencies has to match the client's, or the client resolves to
-nothing. `npm run build:packages` refuses to assemble anything when they disagree, and the release
-workflow runs it before it publishes.
+The optional dependencies are not in the committed `package.json`. A release pins them to a version
+that does not exist on the registry until that same release publishes it, so a committed dependency
+on it could neither be installed nor locked, and `npm ci` would refuse the lockfile. The release
+publishes the platform packages first, then writes the block with `npm run pin:packages`, then
+publishes the client. Pinning by generation also means the versions cannot drift apart.

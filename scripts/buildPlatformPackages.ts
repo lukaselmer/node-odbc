@@ -12,38 +12,12 @@ import path from 'node:path';
 export const PLATFORMS = ['linux-x64', 'linux-arm64', 'darwin-arm64'];
 
 function main(): void {
-  verifyClientDeclaresThem();
-
   const staging = path.join(repositoryRoot(), 'platform-packages');
   fs.rmSync(staging, { recursive: true, force: true });
 
   for (const platform of PLATFORMS) assemble(platform, staging);
 
   console.log(`assembled ${String(PLATFORMS.length)} packages in ${staging}`);
-}
-
-// The client declares the platform packages as optional dependencies, so that
-// exactly one of them installs. A version that drifted from theirs would
-// publish a client unable to resolve its own sidecar.
-function verifyClientDeclaresThem(): void {
-  const declared = clientManifest().optionalDependencies ?? {};
-  const expected = Object.fromEntries(
-    PLATFORMS.map((platform) => [packageName(platform), packageVersion()]),
-  );
-
-  if (asComparableJson(declared) !== asComparableJson(expected)) {
-    throw new Error(
-      `The optional dependencies of @lukaselmer/odbc do not match the platform packages at ` +
-        `${packageVersion()}.\n  declared: ${asComparableJson(declared)}\n  expected: ${asComparableJson(expected)}`,
-    );
-  }
-}
-
-function asComparableJson(dependencies: Record<string, string>): string {
-  const entries = Object.entries(dependencies).toSorted(([one], [other]) =>
-    one.localeCompare(other),
-  );
-  return JSON.stringify(entries);
 }
 
 function assemble(platform: string, staging: string): void {
@@ -94,15 +68,9 @@ export function packageName(platform: string): string {
 }
 
 function packageVersion(): string {
-  return clientManifest().version;
-}
-
-function clientManifest(): { version: string; optionalDependencies?: Record<string, string> } {
   const manifestPath = path.join(repositoryRoot(), 'package.json');
-  return JSON.parse(fs.readFileSync(manifestPath, 'utf8')) as {
-    version: string;
-    optionalDependencies?: Record<string, string>;
-  };
+  const { version } = JSON.parse(fs.readFileSync(manifestPath, 'utf8')) as { version: string };
+  return version;
 }
 
 function repositoryRoot(): string {

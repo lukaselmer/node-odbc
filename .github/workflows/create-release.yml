@@ -94,9 +94,6 @@ jobs:
         # Artifacts travel as zip archives, which do not carry Unix permissions.
         run: chmod +x bin/*/node-odbc-server
       - name: Assemble the platform packages
-        # Also fails when the client's optional dependencies have drifted from
-        # the version being released, which would publish a client that cannot
-        # resolve its own sidecar.
         run: npm run build:packages
       - name: Build the package
         run: npm run build:types
@@ -114,9 +111,8 @@ jobs:
           name: ${{ steps.package-version.outputs.version }}
           generate_release_notes: true
           prerelease: ${{ steps.package-tag.outputs.tag != 'latest' }}
-      # The platform packages go first: the client declares them as optional
-      # dependencies, so publishing it first would leave a window in which it
-      # resolves to nothing.
+      # The platform packages go first: the client depends on them, so publishing
+      # it first would leave a window in which it resolves to nothing.
       - name: Publish the platform packages to npm
         run: |
           for directory in platform-packages/*/; do
@@ -125,6 +121,11 @@ jobs:
           done
         env:
           NPM_TAG: ${{ steps.package-tag.outputs.tag }}
+      - name: Depend on the platform packages just published
+        # Only now, because until this point the version being released does not
+        # exist on the registry, and a committed dependency on it could never be
+        # installed or locked.
+        run: npm run pin:packages
       - name: Publish to npm
         # Authenticated through OIDC: every package is configured on npm with
         # this repository and workflow as a trusted publisher.
