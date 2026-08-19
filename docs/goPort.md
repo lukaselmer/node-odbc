@@ -237,6 +237,9 @@ Prebuilts exist for `linux-x64`, `linux-arm64` and `darwin-arm64`. Anywhere else
 `npm run build:server` and points `NODE_ODBC_SERVER` at it, which is also how a platform gets tried
 before it is worth publishing for.
 
+A container that runs only the sidecar installs only its platform's server package, and never the
+client, which is the other half of what the split buys.
+
 `serverBinaryPath()` looks in three places, in order: `NODE_ODBC_SERVER`, a local build under
 `bin/<platform>/` so that working in this repository needs no packaging step, and finally the
 platform package. The specifier for that last one is built at runtime, which is also what stops a
