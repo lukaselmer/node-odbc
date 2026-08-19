@@ -1,6 +1,9 @@
 #!/bin/sh
 # Derives the npm dist-tag from the version, so that a prerelease never becomes
 # the default install.
+#
+# The tag is the prerelease identifier itself, which keeps parallel prereleases
+# such as goalpha and rustalpha from overwriting each other's tag.
 
 set -eu
 
@@ -12,9 +15,9 @@ if [ "$prerelease" = "$version" ]; then
   exit 0
 fi
 
-case "$prerelease" in
-  *rc*) echo tag=rc ;;
-  *beta*) echo tag=beta ;;
-  *alpha*) echo tag=alpha ;;
-  *) echo tag=next ;;
+identifier="${prerelease%%.*}"
+
+case "$identifier" in
+  *[!a-z]* | '') echo tag=next ;;
+  *) echo "tag=$identifier" ;;
 esac
