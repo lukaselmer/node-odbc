@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { Connection, connect } from '../../lib/index.ts'
+import { connect } from '../../lib/index.ts'
 import { connectionString } from '../helpers.ts'
 
 describe('odbc.connect', () => {
   it('returns an open connection for a valid connection string', async () => {
     const connection = await connect(connectionString())
-    expect(connection).toBeInstanceOf(Connection)
     expect(connection.connected).toBe(true)
     await connection.close()
   })

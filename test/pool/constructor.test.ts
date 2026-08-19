@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { Connection, pool } from '../../lib/index.ts'
+import { pool } from '../../lib/index.ts'
 import { connectionString, waitFor } from '../helpers.ts'
 
 describe('odbc.pool', () => {
@@ -22,7 +22,7 @@ describe('odbc.pool', () => {
   it('has at least one free connection once connect is called', async () => {
     const createdPool = await pool(connectionString())
     const connection = await createdPool.connect()
-    expect(connection).toBeInstanceOf(Connection)
+    expect(connection.connected).toBe(true)
     await createdPool.close()
   })
 })

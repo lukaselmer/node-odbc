@@ -1,12 +1,36 @@
 import type { NativeConnection } from './native.ts'
-import { Statement } from './Statement.ts'
+import { OdbcStatement, type Statement } from './Statement.ts'
 import type { Parameter, Result } from './types.ts'
 
 const CONNECTION_CLOSED_ERROR = 'Connection has already been closed!'
 
-export class Connection {
-  static readonly CONNECTION_CLOSED_ERROR = CONNECTION_CLOSED_ERROR
+/**
+ * An open connection. Declared as an interface for the same reason as
+ * `Statement`: callers receive one, never construct it.
+ */
+export interface Connection {
+  readonly connected: boolean
+  query<T = unknown>(sql: string, parameters?: readonly Parameter[]): Promise<Result<T>>
+  createStatement(): Promise<Statement>
+  tables<T = unknown>(
+    catalog: string | null,
+    schema: string | null,
+    table: string | null,
+    type: string | null,
+  ): Promise<Result<T>>
+  columns<T = unknown>(
+    catalog: string | null,
+    schema: string | null,
+    table: string | null,
+    column: string | null,
+  ): Promise<Result<T>>
+  beginTransaction(): Promise<void>
+  commit(): Promise<void>
+  rollback(): Promise<void>
+  close(): Promise<void>
+}
 
+export class OdbcConnection implements Connection {
   private connection: NativeConnection | null
 
   constructor(connection: NativeConnection) {
@@ -31,7 +55,7 @@ export class Connection {
   }
 
   async createStatement(): Promise<Statement> {
-    return new Statement(await this.native().createStatement())
+    return new OdbcStatement(await this.native().createStatement())
   }
 
   /** The tables matching the restrictions, where `null` means "no restriction". */

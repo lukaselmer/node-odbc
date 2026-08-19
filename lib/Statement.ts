@@ -3,9 +3,19 @@ import type { Parameter, Result } from './types.ts'
 
 const STATEMENT_CLOSED_ERROR = 'Statement has already been closed!'
 
-export class Statement {
-  static readonly STATEMENT_CLOSED_ERROR = STATEMENT_CLOSED_ERROR
+/**
+ * A prepared statement. Declared as an interface because callers only ever
+ * receive one from `createStatement`, and a class with private fields is
+ * nominally typed, which would stop a test double from standing in for it.
+ */
+export interface Statement {
+  prepare(sql: string): Promise<void>
+  bind(parameters: readonly Parameter[]): Promise<void>
+  execute<T = unknown>(): Promise<Result<T>>
+  close(): Promise<void>
+}
 
+export class OdbcStatement implements Statement {
   private statement: NativeStatement | null
 
   constructor(statement: NativeStatement) {

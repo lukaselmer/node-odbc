@@ -1,4 +1,4 @@
-import { Connection } from './Connection.ts'
+import { OdbcConnection, type Connection } from './Connection.ts'
 import { enqueueConnect } from './connectionQueue.ts'
 import { native } from './native.ts'
 import type { NativeConnection } from './native.ts'
@@ -170,7 +170,7 @@ export class Pool {
     this.connectionsBeingCreatedCount--
     this.poolSize++
 
-    const connection = this.asPooled(new Connection(nativeConnection))
+    const connection = this.asPooled(new OdbcConnection(nativeConnection))
     try {
       await this.runInitialStatements(connection)
     } catch (error) {

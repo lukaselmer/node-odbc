@@ -27,19 +27,7 @@ pub fn tables(statement: &mut impl AsStatementRef, selector: &Selector) -> OdbcR
         statement,
         selector,
         "[odbc] Error listing tables",
-        |handle, arguments| unsafe {
-            odbc_api::sys::SQLTables(
-                handle,
-                arguments.catalog.0,
-                arguments.catalog.1,
-                arguments.schema.0,
-                arguments.schema.1,
-                arguments.table.0,
-                arguments.table.1,
-                arguments.fourth.0,
-                arguments.fourth.1,
-            )
-        },
+        sql_tables,
     )
 }
 
@@ -48,20 +36,79 @@ pub fn columns(statement: &mut impl AsStatementRef, selector: &Selector) -> Odbc
         statement,
         selector,
         "[odbc] Error listing columns",
-        |handle, arguments| unsafe {
-            odbc_api::sys::SQLColumns(
-                handle,
-                arguments.catalog.0,
-                arguments.catalog.1,
-                arguments.schema.0,
-                arguments.schema.1,
-                arguments.table.0,
-                arguments.table.1,
-                arguments.fourth.0,
-                arguments.fourth.1,
-            )
-        },
+        sql_columns,
     )
+}
+
+/// Windows drivers take UTF-16, everyone else UTF-8, so the narrow and wide
+/// entry points are not interchangeable: each only accepts its own character
+/// width, which is what `SqlChar` below is chosen to match.
+#[cfg(not(windows))]
+fn sql_tables(handle: HStmt, arguments: &Arguments) -> SqlReturn {
+    unsafe {
+        odbc_api::sys::SQLTables(
+            handle,
+            arguments.catalog.0,
+            arguments.catalog.1,
+            arguments.schema.0,
+            arguments.schema.1,
+            arguments.table.0,
+            arguments.table.1,
+            arguments.fourth.0,
+            arguments.fourth.1,
+        )
+    }
+}
+
+#[cfg(windows)]
+fn sql_tables(handle: HStmt, arguments: &Arguments) -> SqlReturn {
+    unsafe {
+        odbc_api::sys::SQLTablesW(
+            handle,
+            arguments.catalog.0,
+            arguments.catalog.1,
+            arguments.schema.0,
+            arguments.schema.1,
+            arguments.table.0,
+            arguments.table.1,
+            arguments.fourth.0,
+            arguments.fourth.1,
+        )
+    }
+}
+
+#[cfg(not(windows))]
+fn sql_columns(handle: HStmt, arguments: &Arguments) -> SqlReturn {
+    unsafe {
+        odbc_api::sys::SQLColumns(
+            handle,
+            arguments.catalog.0,
+            arguments.catalog.1,
+            arguments.schema.0,
+            arguments.schema.1,
+            arguments.table.0,
+            arguments.table.1,
+            arguments.fourth.0,
+            arguments.fourth.1,
+        )
+    }
+}
+
+#[cfg(windows)]
+fn sql_columns(handle: HStmt, arguments: &Arguments) -> SqlReturn {
+    unsafe {
+        odbc_api::sys::SQLColumnsW(
+            handle,
+            arguments.catalog.0,
+            arguments.catalog.1,
+            arguments.schema.0,
+            arguments.schema.1,
+            arguments.table.0,
+            arguments.table.1,
+            arguments.fourth.0,
+            arguments.fourth.1,
+        )
+    }
 }
 
 type Argument = (*const SqlChar, i16);

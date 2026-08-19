@@ -1,17 +1,17 @@
-import { Connection } from './Connection.ts'
+import { OdbcConnection, type Connection } from './Connection.ts'
 import { native } from './native.ts'
 import { Pool } from './Pool.ts'
 import type { ConnectionParameters, PoolParameters } from './types.ts'
 
-export { Connection } from './Connection.ts'
+export type { Connection } from './Connection.ts'
 export { Pool } from './Pool.ts'
-export { Statement } from './Statement.ts'
+export type { Statement } from './Statement.ts'
 export type * from './types.ts'
 export * from './constants.generated.ts'
 
 /** Opens a connection. */
 export async function connect(connectionString: string | ConnectionParameters): Promise<Connection> {
-  return new Connection(await native.connect(connectionString))
+  return new OdbcConnection(await native.connect(connectionString))
 }
 
 /** Creates a connection pool and fills it to its initial size. */

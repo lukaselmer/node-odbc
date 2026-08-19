@@ -10,6 +10,13 @@ All notable changes to this project will be documented in this file.
   loaded on its own runner. `rustalpha.1` shipped Linux only, which meant the package could not
   be imported at all on a developer machine.
 
+### Fixed
+
+- Windows builds. The catalog functions passed UTF-16 restrictions to the narrow `SQLTables` and
+  `SQLColumns`, which take UTF-8; Windows now calls the wide entry points.
+- `Connection` and `Statement` are interfaces rather than classes. A class with private fields is
+  nominally typed, so a complete test double could not stand in for one.
+
 ## [3.0.0-rustalpha.1] - 2026-08-19
 
 First alpha of the Rust addon. Published under the `alpha` dist-tag.
