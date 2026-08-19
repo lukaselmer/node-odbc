@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.0-gosidecaralpha.2]
+
+### Fixed
+
+- A session is stopped only once. A client that disconnects and a connection that closes itself race
+  for the same session, and the loser used to close an already closed work queue, which panicked and
+  took the whole server down with it. Harmless while every server had one client; not harmless for a
+  server that outlives them
+
 ## [3.0.0-gosidecaralpha.1]
 
 ### Added
