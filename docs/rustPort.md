@@ -1,6 +1,6 @@
 # Rust port of the native addon
 
-`3.0.0-rustalpha.1` replaces the C++ N-API addon (`src/*.cpp`, ~6.6k lines) with Rust, and
+`3.0.0-rustalpha.2` replaces the C++ N-API addon (`src/*.cpp`, ~6.6k lines) with Rust, and
 narrows the public API to what we actually use.
 
 ## Why
@@ -261,7 +261,7 @@ rather than hiding inside a rewrite. `test/manual/connectTiming.mjs` reproduces 
 | Rust                     | `cargo fmt --check`, `cargo clippy -D warnings`, `cargo test`                                                                                                   |
 | TypeScript               | `build:ts`, `typecheck`, `lint`, `format:check` — no toolchain or driver manager, because the constants come from the Rust _source_ rather than the built addon |
 | Tests against PostgreSQL | builds the addon, runs the vitest suite against a `postgres:17` service through `odbc-postgresql`                                                               |
-| Linux x64 artefact       | builds it and asserts the result really is an `ELF 64-bit … x86-64` before uploading                                                                            |
+| Artefact (×3)            | builds the addon on Linux, macOS and Windows runners and loads each one, so a release is never the first time a platform is tried                               |
 
 `create-release.yml` runs on a `v*` tag: it checks the tag matches `package.json`, builds the
 addon and the JavaScript, re-runs the checks, publishes to npm under a dist-tag derived from
@@ -272,9 +272,14 @@ provenance on its own and no long-lived secret exists to leak or expire. The nam
 bearing: npm validates the workflow _filename_ against the trusted publisher configured for
 the package, so renaming this file means editing that configuration too.
 
-**Linux x64 is the only platform built.** It is the only one we deploy to. The package ships
-the crate, so another platform can build from source, but no prebuilt binary is produced for
-it.
+**Three prebuilds ship: `linux-x64`, `darwin-arm64` and `win32-x64`.** Linux is what we
+deploy to; the other two are what the team develops on, and losing them would mean the package
+could not even be imported on a laptop. Each is built on its own runner rather than
+cross-compiled, and the build is verified by `require()`-ing the result — which, unlike
+matching magic bytes, proves it links against that platform's driver manager. Windows needs no
+driver manager installed, because ODBC is part of the OS.
+
+Any other platform builds from source, which the package ships the crate for.
 
 ## Testing locally
 

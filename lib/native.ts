@@ -54,7 +54,8 @@ function loadAddon(): NativeOdbc {
   } catch (cause) {
     throw new Error(
       `Could not load the ODBC addon for ${platform} from ${addon}. ` +
-        `Prebuilt binaries are published for linux-x64 only; build from source with 'npm run build'.`,
+        `Prebuilt binaries are published for linux-x64, darwin-arm64 and win32-x64; ` +
+        `on any other platform, build from source with 'npm run build'.`,
       { cause },
     )
   }

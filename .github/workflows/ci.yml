@@ -89,9 +89,16 @@ jobs:
           DB_TABLE: odbctests
           DB_USERNAME: odbc
 
-  linux-artefact:
-    name: Linux x64 artefact
-    runs-on: ubuntu-latest
+  artefacts:
+    name: Artefact ${{ matrix.platform }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, platform: linux-x64 }
+          - { os: macos-latest, platform: darwin-arm64 }
+          - { os: windows-latest, platform: win32-x64 }
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -100,20 +107,26 @@ jobs:
           cache: npm
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
+
       - name: Install unixODBC
+        if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y unixodbc-dev
+      - name: Install unixODBC
+        if: runner.os == 'macOS'
+        run: brew install unixodbc
+      # Windows needs no step: the driver manager is part of the OS.
+
       - run: npm ci
       - run: npm run build
       - run: npm run build:ts
 
-      # The only platform we deploy to. Other platforms build from source.
-      - name: Check the artefact is a Linux x64 addon
-        run: file prebuilds/linux-x64/odbc.node | grep -q 'ELF 64-bit LSB shared object, x86-64'
+      # Every platform we publish a prebuild for is built and loaded here, so a
+      # release cannot be the first time one of them is tried.
+      - name: Check the addon loads
+        run: node -e "const a = require('./prebuilds/${{ matrix.platform }}/odbc.node'); if (typeof a.connect !== 'function') throw new Error('connect is missing')"
 
       - uses: actions/upload-artifact@v7
         with:
-          name: odbc-linux-x64
-          path: |
-            prebuilds/linux-x64/odbc.node
-            dist/
+          name: odbc-${{ matrix.platform }}
+          path: prebuilds/${{ matrix.platform }}/odbc.node
           if-no-files-found: error

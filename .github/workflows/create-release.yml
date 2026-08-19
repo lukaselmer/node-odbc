@@ -1,4 +1,4 @@
-name: Release
+name: Create Release
 
 on:
   push:
@@ -9,8 +9,53 @@ permissions:
   id-token: write # OIDC, for npm trusted publishing
 
 jobs:
-  release:
-    name: Build and publish
+  build:
+    name: Build ${{ matrix.platform }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, platform: linux-x64 }
+          - { os: macos-latest, platform: darwin-arm64 }
+          - { os: windows-latest, platform: win32-x64 }
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install unixODBC
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y unixodbc-dev
+      - name: Install unixODBC
+        if: runner.os == 'macOS'
+        run: brew install unixodbc
+      # Windows needs no step: the driver manager is part of the OS.
+
+      - run: npm ci
+      - run: npm run build
+
+      - name: Run the Rust tests
+        run: cargo test
+
+      # Loading it is stronger than matching magic bytes: it proves the addon
+      # links against the driver manager on the platform it was built for.
+      - name: Check the addon loads
+        run: node -e "const a = require('./prebuilds/${{ matrix.platform }}/odbc.node'); if (typeof a.connect !== 'function') throw new Error('connect is missing')"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.platform }}
+          path: prebuilds/${{ matrix.platform }}/odbc.node
+          if-no-files-found: error
+
+  publish:
+    name: Publish
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -19,11 +64,6 @@ jobs:
           node-version: 24
           cache: npm
           registry-url: https://registry.npmjs.org
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-
-      - name: Install unixODBC
-        run: sudo apt-get update && sudo apt-get install -y unixodbc-dev
 
       - run: npm ci
 
@@ -36,22 +76,27 @@ jobs:
             exit 1
           fi
 
-      # Linux x64 is the only platform we deploy to; everything else builds from
-      # source, which package.json ships the crate for.
-      - name: Build the addon
-        run: npm run build
+      # One artefact per platform, each named after the directory it belongs in.
+      - uses: actions/download-artifact@v7
+        with:
+          path: prebuilds
 
-      - name: Check the artefact is a Linux x64 addon
-        run: file prebuilds/linux-x64/odbc.node | grep -q 'ELF 64-bit LSB shared object, x86-64'
+      - name: Check every platform arrived
+        run: |
+          for platform in linux-x64 darwin-arm64 win32-x64; do
+            test -f "prebuilds/$platform/odbc.node" || {
+              echo "prebuilds/$platform/odbc.node is missing" >&2
+              exit 1
+            }
+          done
+          ls -l prebuilds/*/odbc.node
 
       - name: Build the JavaScript
         run: npm run build:ts
 
       - name: Verify the package before publishing
-        run: cargo test && npm run typecheck && npm run lint
+        run: npm run typecheck && npm run lint
 
-      # Importing the entry point loads the addon at module scope, so this fails
-      # here rather than on a user's machine if the artefact or loader is wrong.
       - name: Check the built package loads
         run: node -e "import('./dist/index.js').then(m => { if (typeof m.connect !== 'function') throw new Error('connect is missing') })"
 
@@ -76,9 +121,16 @@ jobs:
       - name: Publish to npm
         run: npm publish --tag "$tag" --loglevel verbose
 
-      - name: Attach the artefact to the release
+      - name: Name the artefacts after their platform
+        run: |
+          mkdir -p release
+          for platform in linux-x64 darwin-arm64 win32-x64; do
+            cp "prebuilds/$platform/odbc.node" "release/odbc-$platform.node"
+          done
+
+      - name: Attach the artefacts to the release
         uses: softprops/action-gh-release@v3
         with:
-          files: prebuilds/linux-x64/odbc.node
+          files: release/*.node
           generate_release_notes: true
           prerelease: ${{ env.tag != 'latest' }}
