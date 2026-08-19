@@ -69,12 +69,12 @@ jobs:
           fi
           echo "npm $installed supports trusted publishing"
 
-      # No NODE_AUTH_TOKEN: the package is published through npm trusted
-      # publishing, which exchanges the OIDC token above for a short-lived
-      # credential. Provenance is generated automatically, so --provenance
-      # is not passed.
+      # npm's OIDC exchange is written never to throw: every failure path returns
+      # quietly and logs below the default level, then falls back to token auth
+      # and surfaces as an unrelated 404. --loglevel verbose is what makes the
+      # actual cause visible.
       - name: Publish to npm
-        run: npm publish --tag "$tag"
+        run: npm publish --tag "$tag" --loglevel verbose
 
       - name: Attach the artefact to the release
         uses: softprops/action-gh-release@v3
