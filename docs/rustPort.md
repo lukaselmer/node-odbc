@@ -1,6 +1,6 @@
 # Rust port of the native addon
 
-`3.0.0-rustalpha.5` replaces the C++ N-API addon (`src/*.cpp`, ~6.6k lines) with Rust, and
+`3.0.0-rustalpha.6` replaces the C++ N-API addon (`src/*.cpp`, ~6.6k lines) with Rust, and
 narrows the public API to what we actually use.
 
 ## Why
@@ -254,6 +254,33 @@ so a grown pool stays grown.
 Stack order is the usual choice for a pool, because it keeps a small working set hot and
 lets the rest be reaped. With no reaping implemented that trades away nothing, and the
 liveness argument wins.
+
+## Pool options
+
+Auditing these found two that did nothing at all:
+
+| Option                                                                                  |                                                                                                                                                                                                                                                                        |
+| --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `initialSize`, `incrementSize`, `reuseConnections`, `initialStatements`, `loginTimeout` | work                                                                                                                                                                                                                                                                   |
+| `maxSize`                                                                               | worked only in whole `incrementSize` steps: the pool grew only when a full increment fit, so `maxSize: 15` with the default increment of 10 behaved exactly like `maxSize: 10` and callers waited on connections nobody would open. It now opens whatever room is left |
+| `shrink`                                                                                | **did nothing, in 2.x either.** Assigned in the constructor, read nowhere, so the pool only ever grew. Now implemented                                                                                                                                                 |
+| `connectionTimeout`                                                                     | **did nothing in this port.** 2.x set `SQL_ATTR_CONNECTION_TIMEOUT`; here the value was carried all the way into Rust and then ignored, which is the dangerous kind of dead option. Removed rather than reinstated, since nothing uses it                              |
+
+`lib/poolSizing.ts` holds both decisions as pure functions, because the interesting cases are
+the boundaries and reaching them through a real pool means opening real connections.
+
+## Shrinking
+
+A connection is released when it has sat unused for longer than `shrinkIntervalMs`, which is
+also how often the pool looks. The free list is ordered by when each connection was returned,
+so the sweep starts at the front and stops at the first connection still in use. `minSize`,
+one by default, is the floor.
+
+Rotation makes this self-balancing. Every connection is used in turn, so the cycle time is
+`poolSize x` the gap between requests: a pool the traffic keeps busy is never idle long enough
+to be cut, and a pool grown by a burst falls back until what is left is being used again. Two
+Kubernetes probes at five second periods hold about sixteen connections at the default
+interval, and a pool nobody is using at all falls to `minSize`.
 
 ## The pool is slow to fill, and always was
 

@@ -2,6 +2,7 @@ import { OdbcConnection, type Connection } from './Connection.ts'
 import { enqueueConnect } from './connectionQueue.ts'
 import { native } from './native.ts'
 import type { NativeConnection } from './native.ts'
+import { connectionsToCreate, connectionsToRelease } from './poolSizing.ts'
 import type { Parameter, PoolParameters, Result } from './types.ts'
 
 const REUSE_CONNECTIONS_DEFAULT = true
@@ -9,7 +10,8 @@ const INITIAL_SIZE_DEFAULT = 10
 const INCREMENT_SIZE_DEFAULT = 10
 const MAX_SIZE_DEFAULT = Number.MAX_SAFE_INTEGER
 const SHRINK_DEFAULT = true
-const CONNECTION_TIMEOUT_DEFAULT = 0
+const MIN_SIZE_DEFAULT = 1
+const SHRINK_INTERVAL_MS_DEFAULT = 40_000
 const LOGIN_TIMEOUT_DEFAULT = 0
 
 /** A `connect()` call waiting for a connection to become available. */
@@ -25,7 +27,6 @@ interface PooledConnection extends Connection {
 
 interface ConnectionConfig {
   connectionString: string
-  connectionTimeout: number
   loginTimeout: number
 }
 
@@ -36,6 +37,8 @@ export class Pool {
   readonly incrementSize: number
   readonly maxSize: number
   readonly shrink: boolean
+  readonly minSize: number
+  readonly shrinkIntervalMs: number
   readonly initialStatements: readonly string[]
 
   freeConnections: PooledConnection[] = []
@@ -44,13 +47,16 @@ export class Pool {
 
   private readonly waitingConnectionWork: WaitingWork[] = []
   private connectionsBeingCreatedCount = 0
+  private shrinkTimer: ReturnType<typeof setInterval> | undefined
+
+  /** When each free connection was last returned, so shrinking can tell which are unused. */
+  private readonly idleSince = new WeakMap<PooledConnection, number>()
 
   constructor(options: string | PoolParameters) {
     const configuration = normaliseOptions(options)
 
     this.connectionConfig = {
       connectionString: configuration.connectionString,
-      connectionTimeout: configuration.connectionTimeout ?? CONNECTION_TIMEOUT_DEFAULT,
       loginTimeout: configuration.loginTimeout ?? LOGIN_TIMEOUT_DEFAULT,
     }
     this.reuseConnections = configuration.reuseConnections ?? REUSE_CONNECTIONS_DEFAULT
@@ -58,6 +64,8 @@ export class Pool {
     this.incrementSize = configuration.incrementSize ?? INCREMENT_SIZE_DEFAULT
     this.maxSize = configuration.maxSize ?? MAX_SIZE_DEFAULT
     this.shrink = configuration.shrink ?? SHRINK_DEFAULT
+    this.minSize = configuration.minSize ?? MIN_SIZE_DEFAULT
+    this.shrinkIntervalMs = configuration.shrinkIntervalMs ?? SHRINK_INTERVAL_MS_DEFAULT
     this.initialStatements = parseInitialStatements(configuration.initialStatements)
   }
 
@@ -71,6 +79,7 @@ export class Pool {
 
     this.increasePoolSize(this.initialSize)
     this.freeConnections.unshift(await this.connect())
+    this.startShrinking()
   }
 
   /**
@@ -87,12 +96,14 @@ export class Pool {
     const free = this.freeConnections.shift()
     if (free) return free
 
-    if (
-      this.connectionsBeingCreatedCount <= this.waitingConnectionWork.length &&
-      this.poolSize + this.connectionsBeingCreatedCount + this.incrementSize <= this.maxSize
-    ) {
-      this.increasePoolSize(this.incrementSize)
-    }
+    const toCreate = connectionsToCreate({
+      poolSize: this.poolSize,
+      beingCreated: this.connectionsBeingCreatedCount,
+      waiting: this.waitingConnectionWork.length,
+      incrementSize: this.incrementSize,
+      maxSize: this.maxSize,
+    })
+    if (toCreate > 0) this.increasePoolSize(toCreate)
 
     return new Promise<PooledConnection>((resolve, reject) => {
       this.waitingConnectionWork.push({
@@ -114,6 +125,8 @@ export class Pool {
 
   /** Closes every connection the pool holds. */
   async close(): Promise<void> {
+    this.stopShrinking()
+
     const connections = [...this.freeConnections]
     this.freeConnections.length = 0
     this.isOpen = false
@@ -135,12 +148,51 @@ export class Pool {
   }
 
   /**
+   * Closes the connections nobody has needed for a while.
+   *
+   * Rotation makes this self-balancing: every connection is used in turn, so a
+   * pool the traffic keeps busy is never idle long enough to be cut, and one
+   * grown by a burst falls back until what remains is being used again.
+   */
+  async releaseIdleConnections(): Promise<void> {
+    const toRelease = connectionsToRelease({
+      idleSince: this.freeConnections.map((connection) => this.idleSince.get(connection) ?? 0),
+      now: Date.now(),
+      poolSize: this.poolSize,
+      minSize: this.minSize,
+      maxIdleMs: this.shrinkIntervalMs,
+    })
+    if (toRelease === 0) return
+
+    const released = this.freeConnections.splice(0, toRelease)
+    await Promise.all(released.map((connection) => this.closeOne(connection)))
+  }
+
+  /** Unreferenced, so waiting to reap a connection cannot hold the process open. */
+  private startShrinking(): void {
+    if (!this.shrink || this.shrinkTimer) return
+
+    this.shrinkTimer = setInterval(() => {
+      void this.releaseIdleConnections().catch(() => {})
+    }, this.shrinkIntervalMs)
+    this.shrinkTimer.unref?.()
+  }
+
+  private stopShrinking(): void {
+    if (!this.shrinkTimer) return
+
+    clearInterval(this.shrinkTimer)
+    this.shrinkTimer = undefined
+  }
+
+  /**
    * Hands a newly opened connection to whoever is waiting for one, or parks it
    * in the free list.
    */
   private handOut(connection: PooledConnection): void {
     const waiting = this.waitingConnectionWork.shift()
     if (!waiting) {
+      this.idleSince.set(connection, Date.now())
       this.freeConnections.push(connection)
       return
     }

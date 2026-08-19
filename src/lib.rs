@@ -20,7 +20,6 @@ use std::sync::Arc;
 #[napi(object)]
 pub struct ConnectConfiguration {
     pub connection_string: String,
-    pub connection_timeout: Option<u32>,
     pub login_timeout: Option<u32>,
 }
 
@@ -69,7 +68,6 @@ fn configuration(input: Either<String, ConnectConfiguration>) -> (String, Connec
         Either::B(configuration) => (
             configuration.connection_string,
             ConnectionOptions {
-                connection_timeout: configuration.connection_timeout.unwrap_or(0),
                 login_timeout: configuration.login_timeout.unwrap_or(0),
             },
         ),

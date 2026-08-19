@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.0-rustalpha.6] - 2026-08-19
+
+### Added
+
+- `shrink` closes connections nobody has used, which it never did before: it was assigned in the
+  constructor and read nowhere, in 2.x as well, so the pool only ever grew. `minSize` (default 1)
+  and `shrinkIntervalMs` (default 40s) tune it.
+
+### Fixed
+
+- `maxSize` is reached exactly. The pool grew only when a whole `incrementSize` fit, so any
+  `maxSize` that was not a multiple of it was never reached and callers waited on connections
+  nobody would open.
+
+### Removed
+
+- `connectionTimeout`. The value was carried into the addon and then ignored, so it silently did
+  nothing; `loginTimeout` still works.
+
 ## [3.0.0-rustalpha.5] - 2026-08-19
 
 ### Changed

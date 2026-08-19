@@ -20,7 +20,6 @@ type OwnedPreallocated = Preallocated<StatementConnection<SharedConnection<'stat
 
 #[derive(Debug, Clone, Default)]
 pub struct ConnectionOptions {
-    pub connection_timeout: u32,
     pub login_timeout: u32,
 }
 
@@ -290,11 +289,14 @@ mod tests {
 
     #[test]
     fn passes_a_login_timeout_to_the_driver() {
-        let options = ConnectionOptions {
-            login_timeout: 7,
-            ..ConnectionOptions::default()
-        };
+        let options = ConnectionOptions { login_timeout: 7 };
         assert_eq!(driver_options(&options).login_timeout_sec, Some(7));
+    }
+
+    #[test]
+    fn leaves_the_login_timeout_to_the_driver_when_it_is_not_set() {
+        let options = ConnectionOptions { login_timeout: 0 };
+        assert_eq!(driver_options(&options).login_timeout_sec, None);
     }
 
     /// Set `TEST_CONNECTION_STRING` to run the tests that need a database.
