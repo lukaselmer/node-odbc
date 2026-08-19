@@ -110,6 +110,13 @@ Instead, tracing should be enabled through your driver manager, and that informa
   `fetchArray`) have been removed. Use the pool's `initialStatements` for session setup such
   as `SET SESSION ISOLATION LEVEL READ COMMITTED`.
 
+  The `connectionTimeout` **option** is gone too. It was carried into the addon and then never
+  applied, so setting it did nothing; `loginTimeout` still works.
+
+- **The pool shrinks, which it never did.** `shrink` was read nowhere in 2.x, so a pool only ever
+  grew. Connections nobody has used for `shrinkIntervalMs` are now closed, down to `minSize`
+  (default 1). `maxSize` is also reached exactly, rather than only in whole `incrementSize` steps.
+
 - **Rows are fetched one at a time.** 2.x bound whole blocks of rows with `SQLBindCol`, which
   is faster for large result sets but depends on driver support that not every driver has, and
   is the machinery the removed `fetchSize` option configured. 3.0 reads rows with `SQLGetData`,
@@ -226,7 +233,6 @@ In order to get a connection, you must use the `.connect` function exported from
 
 - **connectionString**: The connection string to connect to the database, usually by naming a DSN. Can also be a configuration object with the following properties:
   - `connectionString` **REQUIRED**: The connection string to connect to the database
-  - `connectionTimeout`: The number of seconds to wait for a request on the connection to complete before returning to the application
   - `loginTimeout`: The number of seconds to wait for a login request to complete before returning to the application
 
 #### Examples:
@@ -243,7 +249,6 @@ async function connectToDatabase() {
   // or using a configuration object
   const connectionConfig = {
     connectionString: 'DSN=MYDSN',
-    connectionTimeout: 10,
     loginTimeout: 10,
   }
   const connection2 = await odbc.connect(connectionConfig)
@@ -487,13 +492,14 @@ Note that `odbc.pool` will resolve as soon as it has created 1 connection. It wi
 
 - **connectionString**: The connection string to connect to the database for all connections in the pool, usually by naming a DSN. Can also be a configuration object with the following properties:
   - `connectionString` **REQUIRED**: The connection string to connect to the database
-  - `connectionTimeout`: The number of seconds to wait for a request on the connection to complete before returning to the application
   - `loginTimeout`: The number of seconds to wait for a login request to complete before returning to the application
-  - `initialSize`: The initial number of Connections created in the Pool
-  - `incrementSize`: How many additional Connections to create when all of the Pool's connections are taken
-  - `maxSize`: The maximum number of open Connections the Pool will create
-  - `reuseConnections`: Whether or not to reuse an existing Connection instead of creating a new one
-  - `shrink`: Whether or not the number of Connections should shrink to `initialSize` as they free up
+  - `initialSize`: The initial number of Connections created in the Pool. Defaults to 10
+  - `incrementSize`: How many additional Connections to create when all of the Pool's connections are taken, capped by `maxSize`. Defaults to 10
+  - `maxSize`: The maximum number of open Connections the Pool will create. Unbounded by default
+  - `reuseConnections`: Whether or not to reuse an existing Connection instead of creating a new one. Defaults to `true`
+  - `shrink`: Whether Connections nobody has used are closed, down to `minSize`. Defaults to `true`
+  - `minSize`: The fewest Connections shrinking will leave open. Defaults to 1
+  - `shrinkIntervalMs`: How long a Connection may sit unused before shrinking closes it, and how often the Pool looks. Defaults to 40000
   - `initialStatements`: SQL run on each new Connection before it is handed out, for session setup such as `SET SESSION ISOLATION LEVEL READ COMMITTED`. A Connection whose initial statements fail is closed and never used.
 
 #### Examples:
