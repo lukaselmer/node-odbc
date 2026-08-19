@@ -263,9 +263,14 @@ rather than hiding inside a rewrite. `test/manual/connectTiming.mjs` reproduces 
 | Tests against PostgreSQL | builds the addon, runs the vitest suite against a `postgres:17` service through `odbc-postgresql`                                                               |
 | Linux x64 artefact       | builds it and asserts the result really is an `ELF 64-bit … x86-64` before uploading                                                                            |
 
-`release.yml` runs on a `v*` tag: it checks the tag matches `package.json`, builds the addon
-and the JavaScript, re-runs the checks, publishes to npm with provenance under a dist-tag
-derived from the version, and attaches the artefact to the GitHub release.
+`create-release.yml` runs on a `v*` tag: it checks the tag matches `package.json`, builds the
+addon and the JavaScript, re-runs the checks, publishes to npm under a dist-tag derived from
+the version, and attaches the artefact to the GitHub release.
+
+It authenticates through npm trusted publishing rather than a token, so npm generates
+provenance on its own and no long-lived secret exists to leak or expire. The name is load
+bearing: npm validates the workflow _filename_ against the trusted publisher configured for
+the package, so renaming this file means editing that configuration too.
 
 **Linux x64 is the only platform built.** It is the only one we deploy to. The package ships
 the crate, so another platform can build from source, but no prebuilt binary is produced for
