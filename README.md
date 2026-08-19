@@ -22,7 +22,8 @@ An asynchronous interface for Node.js to unixODBC and its supported drivers.
 ## Node.js Version Support
 
 The ODBC work runs in a sidecar process written in Go, which ships as a prebuilt binary, so
-installing this package compiles nothing.
+installing this package compiles nothing. The binaries live in one package per platform, selected by
+`os` and `cpu`, so only the one this machine can run is installed.
 
 The package is **ES modules only** and needs **Node.js 24 or newer**. CommonJS callers can still
 `require()` it, because Node loads a synchronous ES module that way, but `import` is the supported

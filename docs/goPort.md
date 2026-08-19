@@ -220,29 +220,29 @@ the same SQLSTATE and the same recovery.
 
 Go-level unit tests cover the protocol framing, value encoding and the SQL type conversion table.
 
-## Next: splitting the package
+## Packaging
 
-The package ships four sidecar binaries, one per supported platform, so an install is ~17 MB of
-which at most one binary is ever used, and in the container split none of them is: the application
-bundles the client and the sidecar image brings its own server.
+The client and the sidecar are published separately.
 
-The usual remedy is the one esbuild and swc use. Publish the binaries as their own packages,
-`@lukaselmer/odbc-server-<platform>-<arch>`, each declaring `os` and `cpu` and holding nothing but
-the binary. `@lukaselmer/odbc` keeps the JavaScript, declares them as `optionalDependencies`, and
-resolves the matching one instead of reaching into its own directory. The package manager then
-installs exactly the one binary the machine can run.
+| package                                     | holds                 | size    |
+| ------------------------------------------- | --------------------- | ------- |
+| `@lukaselmer/odbc`                          | the JavaScript client | ~300 KB |
+| `@lukaselmer/odbc-server-<platform>-<arch>` | one prebuilt sidecar  | ~4 MB   |
 
-That would buy three things:
+The client declares all four server packages as optional dependencies, and each of those declares
+the `os` and `cpu` it is built for, so a package manager installs exactly the one the machine can
+run. That is the arrangement esbuild and swc use. Installing used to mean four binaries and ~17 MB.
 
-- an install drops from ~17 MB to ~4 MB, on every developer machine and every CI cache;
-- a container that only needs the server installs just that, rather than pulling the whole package
-  and deleting the parts it does not want;
-- the client becomes plain JavaScript that resolves a sibling package, so bundling it no longer
-  inlines a binary lookup that cannot work in a bundle.
+`serverBinaryPath()` looks in three places, in order: `NODE_ODBC_SERVER`, a local build under
+`bin/<platform>/` so that working in this repository needs no packaging step, and finally the
+platform package. The specifier for that last one is built at runtime, which is also what stops a
+bundler from trying to resolve a package that exists on one platform only.
 
-It is deliberately not done here. It is a packaging change, not a sidecar change, and it needs the
-new package names registered as trusted publishers on npm before the release workflow can publish
-them, which is manual and cannot be prepared from inside a merge request.
+Two things fall out of the split. An application that reaches a sidecar container over
+`NODE_ODBC_SERVER_ADDRESS` can bundle the client and ship no `node_modules` at all, because there is
+no binary to keep out of the bundle. And an image that needs only the server installs only the
+server package, rather than pulling the whole thing and deleting the parts it did not want.
 
-While doing it, drop `go/` from `files`: the Go sources are published to every consumer, and nothing
-in the published package can build them.
+The version of the optional dependencies has to match the client's, or the client resolves to
+nothing. `npm run build:packages` refuses to assemble anything when they disagree, and the release
+workflow runs it before it publishes.

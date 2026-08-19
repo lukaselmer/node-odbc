@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.0-gosidecaralpha.3]
+
+### Changed
+
+- **Breaking:** the prebuilt sidecars are published as their own packages,
+  `@lukaselmer/odbc-server-<platform>-<arch>`, declared as optional dependencies and selected by
+  `os`/`cpu`. A package manager installs the one binary the machine can run instead of all four,
+  which takes an install from ~17 MB to ~4.5 MB. Nothing changes for callers: `npm i
+@lukaselmer/odbc` still resolves and spawns a sidecar
+- The client is plain JavaScript with no binaries in it, so a bundler can inline it. An application
+  that reaches a sidecar container through `NODE_ODBC_SERVER_ADDRESS` then needs nothing at runtime,
+  and an image that needs only the server can install only that package
+- `NODE_ODBC_SERVER` takes precedence over a local build, so that it can override one
+- The published package no longer carries the Go sources, which no consumer could build
+
 ## [3.0.0-gosidecaralpha.2]
 
 ### Fixed

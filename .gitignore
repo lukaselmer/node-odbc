@@ -8,4 +8,5 @@ core*
 build*/
 bin/
 dist/
+platform-packages/
 *.tsbuildinfo

@@ -95,13 +95,11 @@ jobs:
       - name: Restore the executable bit
         # Artifacts travel as zip archives, which do not carry Unix permissions.
         run: chmod +x bin/*/node-odbc-server
-      - name: Verify a binary exists for every platform
-        run: |
-          for platform in linux-x64 linux-arm64 darwin-arm64 darwin-x64; do
-            test -x "bin/$platform/node-odbc-server" || {
-              echo "Missing the sidecar for $platform"; exit 1;
-            }
-          done
+      - name: Assemble the platform packages
+        # Also fails when the client's optional dependencies have drifted from
+        # the version being released, which would publish a client that cannot
+        # resolve its own sidecar.
+        run: npm run build:packages
       - name: Build the package
         run: npm run build:types
       - name: Read the version
@@ -118,8 +116,19 @@ jobs:
           name: ${{ steps.package-version.outputs.version }}
           generate_release_notes: true
           prerelease: ${{ steps.package-tag.outputs.tag != 'latest' }}
+      # The platform packages go first: the client declares them as optional
+      # dependencies, so publishing it first would leave a window in which it
+      # resolves to nothing.
+      - name: Publish the platform packages to npm
+        run: |
+          for directory in platform-packages/*/; do
+            echo "publishing $directory"
+            npm publish --access public --provenance --tag "$NPM_TAG" "$directory"
+          done
+        env:
+          NPM_TAG: ${{ steps.package-tag.outputs.tag }}
       - name: Publish to npm
-        # Authenticated through OIDC: the package is configured on npm with
+        # Authenticated through OIDC: every package is configured on npm with
         # this repository and workflow as a trusted publisher.
         run: npm publish --access public --provenance --tag "$NPM_TAG"
         env:

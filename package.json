@@ -1,6 +1,6 @@
 {
   "name": "@lukaselmer/odbc",
-  "version": "3.0.0-gosidecaralpha.2",
+  "version": "3.0.0-gosidecaralpha.3",
   "description": "unixodbc bindings for node",
   "homepage": "https://github.com/lukaselmer/node-odbc",
   "bugs": {
@@ -31,8 +31,6 @@
   },
   "files": [
     "dist/",
-    "go/",
-    "bin/",
     "CHANGELOG.md"
   ],
   "type": "module",
@@ -55,7 +53,8 @@
     "lint:types": "tsc --noEmit",
     "lint:code": "oxlint --type-aware",
     "lint:format": "oxfmt --check .",
-    "format": "oxfmt ."
+    "format": "oxfmt .",
+    "build:packages": "node scripts/buildPlatformPackages.ts"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",
@@ -64,6 +63,12 @@
     "oxlint-tsgolint": "^7.0.2001",
     "typescript": "^7.0.2",
     "vitest": "^4.1.11"
+  },
+  "optionalDependencies": {
+    "@lukaselmer/odbc-server-darwin-arm64": "3.0.0-gosidecaralpha.3",
+    "@lukaselmer/odbc-server-darwin-x64": "3.0.0-gosidecaralpha.3",
+    "@lukaselmer/odbc-server-linux-arm64": "3.0.0-gosidecaralpha.3",
+    "@lukaselmer/odbc-server-linux-x64": "3.0.0-gosidecaralpha.3"
   },
   "engines": {
     "node": ">=24.0.0"
