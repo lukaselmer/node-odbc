@@ -76,9 +76,15 @@ export class Pool {
   /**
    * A connection from the pool, ready to use. Closing it returns it to the pool
    * rather than closing it for real.
+   *
+   * Connections are taken from the front and returned to the back, so a caller
+   * that takes one at a time works through all of them instead of reusing the
+   * most recently returned one. A connection that is never handed out is one
+   * nobody notices has died, and an idle connection does die: a flow left quiet
+   * for long enough is dropped by the network, telling neither end.
    */
   async connect(): Promise<PooledConnection> {
-    const free = this.freeConnections.pop()
+    const free = this.freeConnections.shift()
     if (free) return free
 
     if (

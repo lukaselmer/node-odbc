@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.0-rustalpha.5] - 2026-08-19
+
+### Changed
+
+- The pool hands out connections in rotation. It took and returned them at the same end, so a
+  caller holding one connection at a time reused it forever while the rest of the pool sat idle
+  until the network dropped it, which a health probe turns into a pod that reports itself ready
+  with one working connection and nine dead ones.
+
 ## [3.0.0-rustalpha.4] - 2026-08-19
 
 ### Fixed

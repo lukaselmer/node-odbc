@@ -1,6 +1,6 @@
 # Rust port of the native addon
 
-`3.0.0-rustalpha.4` replaces the C++ N-API addon (`src/*.cpp`, ~6.6k lines) with Rust, and
+`3.0.0-rustalpha.5` replaces the C++ N-API addon (`src/*.cpp`, ~6.6k lines) with Rust, and
 narrows the public API to what we actually use.
 
 ## Why
@@ -231,6 +231,29 @@ Worth knowing when this ships: **Ingres defaults to SERIALIZABLE**
 our application does not set an isolation level today — its only `setIsolationLevel` call
 sits in a never-imported type fixture. Adopting `READ COMMITTED` is therefore a real
 change in behaviour, not a restatement of the status quo, and deserves its own test.
+
+## Connections are handed out in rotation
+
+The free list is a queue rather than a stack: `connect()` takes from the front and a returned
+connection goes to the back. It used to take and return at the same end, so a caller that
+holds one connection at a time got the same one every time, and the rest of the pool was
+never touched.
+
+That is how a health probe hides a broken pool. The probe queries, the one connection it
+keeps reusing answers, the pod reports itself ready — and the other nine connections have
+been silently dropped by the network, which our application repository measured at 350s of
+idle. The first real request finds them.
+
+Rotation also does more than expose the problem. Two Kubernetes probes at five second
+periods are about one query every 2.5s, so a ten connection pool comes all the way round
+every 25s and nothing is ever idle long enough to be dropped. That holds while the pool is
+small: the cycle is `poolSize x 2.5s`, so a pool grown past roughly 140 connections would
+start losing idle ones again. The pool has a `shrink` option but no reaping to go with it,
+so a grown pool stays grown.
+
+Stack order is the usual choice for a pool, because it keeps a small working set hot and
+lets the rest be reaped. With no reaping implemented that trades away nothing, and the
+liveness argument wins.
 
 ## The pool is slow to fill, and always was
 
