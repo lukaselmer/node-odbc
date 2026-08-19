@@ -8,9 +8,12 @@ All notable changes to this project will be documented in this file.
 
 - **Breaking:** the prebuilt sidecars are published as their own packages,
   `@lukaselmer/odbc-server-<platform>-<arch>`, declared as optional dependencies and selected by
-  `os`/`cpu`. A package manager installs the one binary the machine can run instead of all four,
-  which takes an install from ~17 MB to ~4.5 MB. Nothing changes for callers: `npm i
-@lukaselmer/odbc` still resolves and spawns a sidecar
+  `os`/`cpu`. A package manager installs the one binary the machine can run rather than every one,
+  which takes an install from ~17 MB to ~4.5 MB. Nothing changes for callers: installing
+  `@lukaselmer/odbc` still resolves and spawns a sidecar
+- **Breaking:** dropped the prebuilt sidecar for Intel macOS. The supported platforms are
+  `linux-x64`, `linux-arm64` and `darwin-arm64`; anywhere else can still build one with
+  `npm run build:server` and point `NODE_ODBC_SERVER` at it
 - The client is plain JavaScript with no binaries in it, so a bundler can inline it. An application
   that reaches a sidecar container through `NODE_ODBC_SERVER_ADDRESS` then needs nothing at runtime,
   and an image that needs only the server can install only that package

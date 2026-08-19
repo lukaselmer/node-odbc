@@ -229,9 +229,13 @@ The client and the sidecar are published separately.
 | `@lukaselmer/odbc`                          | the JavaScript client | ~300 KB |
 | `@lukaselmer/odbc-server-<platform>-<arch>` | one prebuilt sidecar  | ~4 MB   |
 
-The client declares all four server packages as optional dependencies, and each of those declares
-the `os` and `cpu` it is built for, so a package manager installs exactly the one the machine can
-run. That is the arrangement esbuild and swc use. Installing used to mean four binaries and ~17 MB.
+The client declares every server package as an optional dependency, and each of those declares the
+`os` and `cpu` it is built for, so a package manager installs exactly the one the machine can run.
+That is the arrangement esbuild and swc use. Installing used to mean every binary and ~17 MB.
+
+Prebuilts exist for `linux-x64`, `linux-arm64` and `darwin-arm64`. Anywhere else builds its own with
+`npm run build:server` and points `NODE_ODBC_SERVER` at it, which is also how a platform gets tried
+before it is worth publishing for.
 
 `serverBinaryPath()` looks in three places, in order: `NODE_ODBC_SERVER`, a local build under
 `bin/<platform>/` so that working in this repository needs no packaging step, and finally the

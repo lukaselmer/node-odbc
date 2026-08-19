@@ -9,7 +9,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-export const PLATFORMS = ['linux-x64', 'linux-arm64', 'darwin-x64', 'darwin-arm64'];
+export const PLATFORMS = ['linux-x64', 'linux-arm64', 'darwin-arm64'];
 
 function main(): void {
   verifyClientDeclaresThem();
