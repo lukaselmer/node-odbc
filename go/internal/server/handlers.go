@@ -28,7 +28,7 @@ type fetchResult struct {
 	NoData bool         `json:"noData"`
 }
 
-func (s *Server) connect(request protocol.Request) (any, error) {
+func (s *Server) connect(client *client, request protocol.Request) (any, error) {
 	var args connectArgs
 	if err := decodeArgs(request.Args, &args); err != nil {
 		return nil, err
@@ -45,7 +45,9 @@ func (s *Server) connect(request protocol.Request) (any, error) {
 	}
 
 	handle := s.newHandle("c")
-	s.registerSession(handle, newSession(connection))
+	session := newSession(connection, client)
+	s.registerSession(handle, session)
+	client.track(handle, session)
 	return handleResult{Handle: handle}, nil
 }
 

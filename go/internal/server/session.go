@@ -12,15 +12,17 @@ import (
 // thread-local state.
 type session struct {
 	connection *odbc.Connection
+	owner      *client
 	work       chan func()
 	closed     chan struct{}
 	statements map[string]*odbc.Statement
 	cursors    map[string]*odbc.Cursor
 }
 
-func newSession(connection *odbc.Connection) *session {
+func newSession(connection *odbc.Connection, owner *client) *session {
 	session := &session{
 		connection: connection,
+		owner:      owner,
 		work:       make(chan func()),
 		closed:     make(chan struct{}),
 		statements: map[string]*odbc.Statement{},

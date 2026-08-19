@@ -10,14 +10,14 @@ import (
 // dispatch routes a request. Connecting and cancelling run off the session
 // queue: connecting has no session yet, and cancelling has to reach a driver
 // that may be blocking the session goroutine.
-func (s *Server) dispatch(request protocol.Request, encoder *protocol.Encoder) {
+func (s *Server) dispatch(client *client, request protocol.Request) {
 	switch {
 	case request.Target == protocol.TargetODBC:
-		go s.respond(request, encoder, func() (any, error) { return s.connect(request) })
+		go s.respond(client, request, func() (any, error) { return s.connect(client, request) })
 	case isCancel(request):
-		go s.respond(request, encoder, func() (any, error) { return s.cancel(request) })
+		go s.respond(client, request, func() (any, error) { return s.cancel(request) })
 	default:
-		go s.respondOnSession(request, encoder)
+		go s.respondOnSession(client, request)
 	}
 }
 
@@ -26,10 +26,10 @@ func isCancel(request protocol.Request) bool {
 		(request.Target == protocol.TargetConnection || request.Target == protocol.TargetStatement)
 }
 
-func (s *Server) respondOnSession(request protocol.Request, encoder *protocol.Encoder) {
+func (s *Server) respondOnSession(client *client, request protocol.Request) {
 	session := s.sessionOf(request.Handle)
 	if session == nil {
-		s.respond(request, encoder, func() (any, error) { return nil, errUnknownHandle(request.Handle) })
+		s.respond(client, request, func() (any, error) { return nil, errUnknownHandle(request.Handle) })
 		return
 	}
 
@@ -40,12 +40,12 @@ func (s *Server) respondOnSession(request protocol.Request, encoder *protocol.En
 	if !session.submit(func() { result, err = s.invoke(session, request) }) {
 		err = errUnknownHandle(request.Handle)
 	}
-	encoder.Encode(newResponse(request.ID, result, err))
+	client.encoder.Encode(newResponse(request.ID, result, err))
 }
 
-func (s *Server) respond(request protocol.Request, encoder *protocol.Encoder, run func() (any, error)) {
+func (s *Server) respond(client *client, request protocol.Request, run func() (any, error)) {
 	result, err := run()
-	encoder.Encode(newResponse(request.ID, result, err))
+	client.encoder.Encode(newResponse(request.ID, result, err))
 }
 
 func newResponse(id uint64, result any, err error) protocol.Response {

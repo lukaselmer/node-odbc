@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.0-gosidecaralpha.1]
+
+### Added
+
+- `--listen <address>` runs the sidecar as a server of its own, so that it can be deployed in a
+  container of its own next to the application. It listens on TCP, keeps running across clients and
+  stops on `SIGINT`/`SIGTERM`. A client that disconnects takes its own ODBC connections with it, so
+  a restarted application cannot leak connections into a server that stays up. See `docs/goPort.md`
+- `NODE_ODBC_SERVER_ADDRESS` connects to such a server instead of spawning a child process. The
+  value is `host:port` or the path of a unix socket
+
+### Changed
+
+- The error a broken connection to the sidecar produces no longer claims the server exited, which
+  is only one of the reasons for it
+
 ## [3.0.0-goalpha.2]
 
 ### Added

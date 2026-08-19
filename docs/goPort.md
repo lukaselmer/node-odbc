@@ -44,6 +44,33 @@ socket closes, so it can never outlive the Node process. The client socket is `u
 idle and `ref()`ed while requests are in flight, which reproduces the old behaviour where a pending
 `AsyncWorker` keeps the event loop alive.
 
+### Running the sidecar on its own
+
+The fault isolation above is worth more once the sidecar is a container of its own: the ODBC driver,
+its client libraries and their configuration then leave the application image entirely, which can go
+back to a minimal distroless base.
+
+```
+ node (distroless)                         ingres sidecar (Actian client)
+   dist/odbc.js ── src/native/ ── tcp ──>  node-odbc-server --listen 127.0.0.1:9711
+```
+
+Two things differ from the spawned sidecar.
+
+`--listen <address>` makes the server listen on TCP and keep running across clients, rather than
+exiting with the first one that disconnects. It stops on `SIGINT` or `SIGTERM`. Because it now
+outlives its callers, a client that disconnects takes its own ODBC connections with it: the sessions
+it opened are closed and their handles released, so a restarted application cannot leak connections
+into a server that stays up.
+
+`NODE_ODBC_SERVER_ADDRESS` makes the client connect to that address instead of spawning a child. The
+value is `host:port` or the path of a unix socket. Nothing else changes: the wire protocol is the
+same, a lost connection rejects the in-flight requests, and the next call reconnects.
+
+The address is reachable by whoever can reach the port, and the protocol has no authentication, so
+bind it to loopback. In a Kubernetes pod that is enough: the containers of a pod share one network
+namespace, and nothing outside it can reach `127.0.0.1`.
+
 ### Concurrency model
 
 Each ODBC connection is owned by one goroutine pinned with `runtime.LockOSThread()`, fed by a

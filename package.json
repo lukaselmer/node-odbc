@@ -1,6 +1,6 @@
 {
   "name": "@lukaselmer/odbc",
-  "version": "3.0.0-goalpha.2",
+  "version": "3.0.0-gosidecaralpha.1",
   "description": "unixodbc bindings for node",
   "homepage": "https://github.com/lukaselmer/node-odbc",
   "bugs": {

@@ -12,11 +12,29 @@ import (
 	"github.com/lukaselmer/node-odbc/go/internal/protocol"
 )
 
-// Server serves ODBC work over a unix socket. It exits once the last client
-// disconnects so that it can never outlive the Node process that spawned it.
+// Lifetime says when the server stops on its own.
+type Lifetime string
+
+const (
+	// UntilLastClient belongs to a server spawned by one Node process, which it
+	// must never outlive.
+	UntilLastClient Lifetime = "untilLastClient"
+	// UntilSignal belongs to a server deployed on its own, next to callers that
+	// come and go, such as a Kubernetes sidecar container.
+	UntilSignal Lifetime = "untilSignal"
+)
+
+type Options struct {
+	Network  string
+	Address  string
+	Lifetime Lifetime
+}
+
+// Server serves ODBC work to the clients that connect to it.
 type Server struct {
 	listener    net.Listener
 	environment *odbc.Environment
+	lifetime    Lifetime
 
 	mutex    sync.Mutex
 	sessions map[string]*session
@@ -27,13 +45,13 @@ type Server struct {
 	done    chan struct{}
 }
 
-func New(socketPath string) (*Server, error) {
+func New(options Options) (*Server, error) {
 	environment, err := odbc.NewEnvironment()
 	if err != nil {
 		return nil, err
 	}
 
-	listener, err := net.Listen("unix", socketPath)
+	listener, err := net.Listen(options.Network, options.Address)
 	if err != nil {
 		environment.Close()
 		return nil, err
@@ -42,13 +60,15 @@ func New(socketPath string) (*Server, error) {
 	return &Server{
 		listener:    listener,
 		environment: environment,
+		lifetime:    options.Lifetime,
 		sessions:    map[string]*session{},
 		owners:      map[string]*session{},
 		done:        make(chan struct{}),
 	}, nil
 }
 
-// Serve accepts clients until the last one disconnects or Close is called.
+// Serve accepts clients until Close is called, or until the last client
+// disconnects when the lifetime says so.
 func (s *Server) Serve() error {
 	go s.acceptLoop()
 	<-s.done
@@ -68,11 +88,11 @@ func (s *Server) acceptLoop() {
 
 func (s *Server) serveClient(connection net.Conn) {
 	defer connection.Close()
-	defer s.clientDisconnected()
+
+	client := newClient(connection)
+	defer s.clientDisconnected(client)
 
 	decoder := protocol.NewDecoder(connection)
-	encoder := protocol.NewEncoder(connection)
-
 	for {
 		var request protocol.Request
 		if err := decoder.Decode(&request); err != nil {
@@ -81,15 +101,20 @@ func (s *Server) serveClient(connection net.Conn) {
 			}
 			return
 		}
-		s.dispatch(request, encoder)
+		s.dispatch(client, request)
 	}
 }
 
-func (s *Server) clientDisconnected() {
-	if s.clients.Add(-1) > 0 {
-		return
+// A client that goes away takes its ODBC connections with it, so that a server
+// outliving its callers cannot accumulate the connections they left behind.
+func (s *Server) clientDisconnected(client *client) {
+	for handle, session := range client.takeSessions() {
+		s.discardSession(handle, session)
 	}
-	s.Close()
+
+	if s.clients.Add(-1) == 0 && s.lifetime == UntilLastClient {
+		s.Close()
+	}
 }
 
 func (s *Server) Close() {
@@ -107,18 +132,43 @@ func (s *Server) Close() {
 
 func (s *Server) closeSessions() {
 	s.mutex.Lock()
-	sessions := make([]*session, 0, len(s.sessions))
-	for _, session := range s.sessions {
-		sessions = append(sessions, session)
+	sessions := make(map[string]*session, len(s.sessions))
+	for handle, session := range s.sessions {
+		sessions[handle] = session
 	}
-	s.sessions = map[string]*session{}
-	s.owners = map[string]*session{}
 	s.mutex.Unlock()
 
-	for _, session := range sessions {
-		session.submit(func() { session.connection.Close() })
-		session.stop()
+	for handle, session := range sessions {
+		s.discardSession(handle, session)
 	}
+}
+
+// discardSession closes a session and releases every handle it owned. The
+// statements and cursors are read on the session goroutine, the only one
+// allowed to touch them.
+func (s *Server) discardSession(handle string, discarded *session) {
+	var owned []string
+	discarded.submit(func() {
+		owned = ownedHandles(discarded)
+		discarded.connection.Close()
+	})
+	discarded.stop()
+
+	s.release(handle)
+	for _, ownedHandle := range owned {
+		s.release(ownedHandle)
+	}
+}
+
+func ownedHandles(session *session) []string {
+	handles := make([]string, 0, len(session.statements)+len(session.cursors))
+	for handle := range session.statements {
+		handles = append(handles, handle)
+	}
+	for handle := range session.cursors {
+		handles = append(handles, handle)
+	}
+	return handles
 }
 
 func (s *Server) newHandle(prefix string) string {
@@ -151,13 +201,4 @@ func (s *Server) sessionOf(handle string) *session {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	return s.owners[handle]
-}
-
-func (s *Server) removeSession(handle string) *session {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	session := s.sessions[handle]
-	delete(s.sessions, handle)
-	delete(s.owners, handle)
-	return session
 }

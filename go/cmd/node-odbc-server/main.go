@@ -1,8 +1,10 @@
-// Command node-odbc-server exposes unixODBC over a unix socket for the
-// node-odbc JavaScript client.
+// Command node-odbc-server exposes unixODBC to the node-odbc JavaScript
+// client, either over a unix socket next to it or over a TCP port, which is
+// what lets it run in a container of its own.
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -13,30 +15,44 @@ import (
 )
 
 func main() {
-	socketPath := flag.String("socket", "", "path of the unix socket to listen on")
+	socketPath := flag.String("socket", "", "unix socket to listen on; exits once the last client disconnects")
+	listenAddress := flag.String("listen", "", "TCP address to listen on, such as 127.0.0.1:9711; runs until it is signalled")
 	flag.Parse()
 
-	if *socketPath == "" {
-		fmt.Fprintln(os.Stderr, "node-odbc: --socket is required")
+	options, err := optionsFrom(*socketPath, *listenAddress)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "node-odbc: %v\n", err)
 		os.Exit(2)
 	}
 
-	if err := run(*socketPath); err != nil {
+	if err := run(options); err != nil {
 		fmt.Fprintf(os.Stderr, "node-odbc: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-func run(socketPath string) error {
-	odbcServer, err := server.New(socketPath)
+func optionsFrom(socketPath string, listenAddress string) (server.Options, error) {
+	switch {
+	case socketPath != "" && listenAddress != "":
+		return server.Options{}, errors.New("--socket and --listen cannot be combined")
+	case socketPath != "":
+		return server.Options{Network: "unix", Address: socketPath, Lifetime: server.UntilLastClient}, nil
+	case listenAddress != "":
+		return server.Options{Network: "tcp", Address: listenAddress, Lifetime: server.UntilSignal}, nil
+	default:
+		return server.Options{}, errors.New("either --socket or --listen is required")
+	}
+}
+
+func run(options server.Options) error {
+	odbcServer, err := server.New(options)
 	if err != nil {
 		return err
 	}
-	defer os.Remove(socketPath)
 
 	go shutdownOnSignal(odbcServer)
 
-	// The client waits for this line before connecting.
+	// A spawning client waits for this line before connecting.
 	fmt.Println("ready")
 	os.Stdout.Sync()
 

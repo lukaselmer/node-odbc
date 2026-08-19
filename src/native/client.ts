@@ -23,10 +23,12 @@ interface PendingRequest {
 }
 
 /**
- * Talks to the ODBC sidecar over a unix socket.
+ * Talks to the ODBC sidecar over a socket.
  *
- * The sidecar starts on first use and exits once this socket closes, so it can
- * never outlive the Node process.
+ * By default the sidecar is a child process, started on first use, that exits
+ * once this socket closes, so it can never outlive the Node process. Point
+ * NODE_ODBC_SERVER_ADDRESS at a running sidecar to use that one instead, which
+ * is how the sidecar runs in a container of its own.
  */
 export class SidecarClient {
   private socket: net.Socket | null = null;
@@ -57,11 +59,16 @@ export class SidecarClient {
 
   private start(): Promise<void> {
     if (this.socket) return Promise.resolve();
-    this.starting ??= this.spawnSidecar();
+    this.starting ??= this.open();
     return this.starting;
   }
 
-  private async spawnSidecar(): Promise<void> {
+  private async open(): Promise<void> {
+    const address = process.env['NODE_ODBC_SERVER_ADDRESS'];
+    this.attach(address === undefined ? await this.spawnSidecar() : await connect(address));
+  }
+
+  private async spawnSidecar(): Promise<net.Socket> {
     // Unix socket paths are limited to ~104 bytes, so the name stays short.
     const socketPath = path.join(
       os.tmpdir(),
@@ -77,14 +84,18 @@ export class SidecarClient {
     // The readiness pipe would otherwise keep the event loop alive forever.
     unrefStream(this.child.stdout);
 
-    this.socket = await connectSocket(socketPath);
-    this.socket.on('data', (chunk: Buffer) => {
+    return connect(socketPath);
+  }
+
+  private attach(socket: net.Socket): void {
+    this.socket = socket;
+    socket.on('data', (chunk: Buffer) => {
       this.consume(chunk);
     });
-    this.socket.on('close', () => {
-      this.failAllPending(new Error('[odbc] The ODBC server exited unexpectedly'));
+    socket.on('close', () => {
+      this.failAllPending(new Error('[odbc] Lost the connection to the ODBC server'));
     });
-    this.socket.unref();
+    socket.unref();
   }
 
   private consume(chunk: Buffer): void {
@@ -169,14 +180,22 @@ function unrefStream(stream: unknown): void {
   (stream as { unref?: () => void } | null)?.unref?.();
 }
 
-function connectSocket(socketPath: string): Promise<net.Socket> {
+function connect(address: string): Promise<net.Socket> {
   return new Promise((resolve, reject) => {
-    const socket = net.createConnection(socketPath);
+    const socket = net.createConnection(connectionTarget(address));
     socket.once('connect', () => {
       resolve(socket);
     });
     socket.once('error', reject);
   });
+}
+
+// An address is either host:port or the path of a unix socket.
+function connectionTarget(address: string): net.NetConnectOpts {
+  const separator = address.lastIndexOf(':');
+  const port = Number(address.slice(separator + 1));
+  if (separator === -1 || !Number.isInteger(port) || port <= 0) return { path: address };
+  return { host: address.slice(0, separator) || '127.0.0.1', port };
 }
 
 function toOdbcError(error: WireError): OdbcError {

@@ -46,8 +46,25 @@ kubectl --context "$KUBE_CONTEXT" exec -n "$KUBE_NAMESPACE" "$KUBE_POD" -c "$KUB
     export ODBCSYSINI=/etc/odbc ODBCINI=/etc/odbc/odbc.ini
     export NODE_PATH=/app/node_modules
     export NODE_ODBC_SERVER=/tmp/podpkg/bin/linux-x64/node-odbc-server
+
+    server=""
+    cleanup() {
+      [ -n "$server" ] && kill "$server" 2>/dev/null
+      rm -rf /tmp/podpkg /tmp/podpkg.tgz
+    }
+    trap cleanup EXIT
+
+    echo "=== sidecar spawned by the client ==="
     node --experimental-strip-types smoke.ts
-    status=$?
-    rm -rf /tmp/podpkg /tmp/podpkg.tgz
-    exit $status
+
+    echo
+    echo "=== sidecar listening on its own, as it does in a container ==="
+    "$NODE_ODBC_SERVER" --listen 127.0.0.1:9711 &
+    server=$!
+    sleep 1
+    NODE_ODBC_SERVER_ADDRESS=127.0.0.1:9711 node --experimental-strip-types smoke.ts
+
+    echo
+    echo "=== the same server serves the next client too ==="
+    NODE_ODBC_SERVER_ADDRESS=127.0.0.1:9711 node --experimental-strip-types smoke.ts
   '

@@ -108,7 +108,8 @@ func (s *Server) closeConnection(session *session, request protocol.Request) err
 		return err
 	}
 
-	s.removeSession(request.Handle)
+	session.owner.forget(request.Handle)
+	s.release(request.Handle)
 	for handle := range session.statements {
 		s.release(handle)
 	}
