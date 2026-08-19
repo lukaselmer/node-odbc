@@ -44,10 +44,18 @@ jobs:
       - name: Install unixODBC (Linux)
         if: startsWith(matrix.os, 'ubuntu')
         # A bare apt-get can sit for hours: it waits on the dpkg lock behind the
-        # runner's own background updates, and stalls when a mirror does.
-        timeout-minutes: 5
+        # runner's own background updates, and stalls when a mirror does. The
+        # x64 runners' azure mirror does exactly that often enough to matter, so
+        # it is swapped for the canonical archive, and the update is retried
+        # rather than given one long timeout, which a stall does not survive.
+        timeout-minutes: 12
         run: |
-          sudo apt-get update -o Acquire::Retries=3
+          sudo sed -i 's|azure.archive.ubuntu.com|archive.ubuntu.com|g' \
+            /etc/apt/sources.list.d/ubuntu.sources /etc/apt/sources.list || true
+          for attempt in 1 2 3; do
+            if timeout 150 sudo apt-get update -o Acquire::Retries=3; then break; fi
+            echo "apt-get update did not finish, retrying ($attempt)"
+          done
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -o Acquire::Retries=3 unixodbc-dev
       - name: Build the sidecar
         run: npm run build:server
