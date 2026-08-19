@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.0-rustalpha.3] - 2026-08-19
+
+### Fixed
+
+- Whole numbers are bound as integers rather than doubles. JavaScript has one number type and the
+  2.x addon chose per value; the port always chose double, which Ingres rejects wherever its
+  grammar demands an integer, such as `LIMIT ?`.
+- BigInt parameters. They were coerced to a number first, which is a TypeError in JavaScript, so
+  every BigInt parameter threw.
+
 ## [3.0.0-rustalpha.2] - 2026-08-19
 
 ### Added

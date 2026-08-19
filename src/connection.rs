@@ -205,7 +205,12 @@ fn read_parameter(value: &Unknown) -> Result<Parameter> {
         ValueType::Null | ValueType::Undefined => Ok(Parameter::Null),
         ValueType::Boolean => Ok(Parameter::Boolean(value.coerce_to_bool()?)),
         ValueType::Number => Ok(Parameter::Number(value.coerce_to_number()?.get_double()?)),
-        ValueType::BigInt => Ok(Parameter::BigInt(value.coerce_to_number()?.get_int64()?)),
+        // Coercing a BigInt to a number is a TypeError in JavaScript, so it is
+        // read as one. The cast is sound because the type was just checked.
+        ValueType::BigInt => {
+            let value = unsafe { value.cast::<BigInt>() }?;
+            Ok(Parameter::BigInt(value.get_i64().0))
+        }
         _ => Ok(Parameter::Text(
             value.coerce_to_string()?.into_utf8()?.into_owned()?,
         )),

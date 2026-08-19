@@ -165,11 +165,33 @@ fn as_input_parameter(parameter: &Parameter) -> Box<dyn InputParameter> {
     match parameter {
         Parameter::Null => Box::new(None::<String>.into_parameter()),
         Parameter::Text(text) => Box::new(text.clone().into_parameter()),
-        Parameter::Number(value) => Box::new(*value),
+        Parameter::Number(value) => as_number_parameter(*value),
         Parameter::BigInt(value) => Box::new(*value),
         Parameter::Boolean(value) => Box::new(odbc_api::Bit(u8::from(*value))),
         Parameter::Binary(bytes) => Box::new(bytes.clone().into_parameter()),
     }
+}
+
+/// JavaScript has one number type; a driver does not. Ingres rejects a floating
+/// point host variable where the grammar demands an integer, `LIMIT ?` being the
+/// one this application hits, so a value that is exactly an integer is bound as
+/// one.
+/// JavaScript has one number type; a driver does not. Ingres rejects a floating
+/// point host variable where the grammar demands an integer, `LIMIT ?` being the
+/// one this application hits, so a value that is exactly an integer is bound as
+/// one.
+fn as_number_parameter(value: f64) -> Box<dyn InputParameter> {
+    match integral(value) {
+        Some(integral) => Box::new(integral),
+        None => Box::new(value),
+    }
+}
+
+/// The value as an integer, when it is one exactly. Saturating casts make this
+/// reject infinities and anything beyond `i64`, and `NaN` compares false.
+fn integral(value: f64) -> Option<i64> {
+    let candidate = value as i64;
+    (candidate as f64 == value).then_some(candidate)
 }
 
 pub fn empty_result(sql: Option<String>, row_count: i64) -> ResultSet {
@@ -210,6 +232,28 @@ mod tests {
             Parameter::BigInt(7),
         ];
         assert_eq!(bind(&parameters).len(), 3);
+    }
+
+    #[test]
+    fn binds_a_whole_number_as_an_integer() {
+        assert_eq!(integral(42.0), Some(42));
+        assert_eq!(integral(-1.0), Some(-1));
+        assert_eq!(integral(0.0), Some(0));
+    }
+
+    #[test]
+    fn binds_a_fractional_number_as_a_double() {
+        assert_eq!(integral(1.5), None);
+        assert_eq!(integral(f64::MIN_POSITIVE), None);
+    }
+
+    /// A saturating cast would otherwise report i64::MAX for all of these.
+    #[test]
+    fn binds_a_number_no_integer_can_hold_as_a_double() {
+        assert_eq!(integral(f64::INFINITY), None);
+        assert_eq!(integral(f64::NEG_INFINITY), None);
+        assert_eq!(integral(f64::NAN), None);
+        assert_eq!(integral(1e30), None);
     }
 
     #[test]
