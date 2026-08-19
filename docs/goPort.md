@@ -219,3 +219,30 @@ the same SQLSTATE and the same recovery.
 ### Unit tests
 
 Go-level unit tests cover the protocol framing, value encoding and the SQL type conversion table.
+
+## Next: splitting the package
+
+The package ships four sidecar binaries, one per supported platform, so an install is ~17 MB of
+which at most one binary is ever used, and in the container split none of them is: the application
+bundles the client and the sidecar image brings its own server.
+
+The usual remedy is the one esbuild and swc use. Publish the binaries as their own packages,
+`@lukaselmer/odbc-server-<platform>-<arch>`, each declaring `os` and `cpu` and holding nothing but
+the binary. `@lukaselmer/odbc` keeps the JavaScript, declares them as `optionalDependencies`, and
+resolves the matching one instead of reaching into its own directory. The package manager then
+installs exactly the one binary the machine can run.
+
+That would buy three things:
+
+- an install drops from ~17 MB to ~4 MB, on every developer machine and every CI cache;
+- a container that only needs the server installs just that, rather than pulling the whole package
+  and deleting the parts it does not want;
+- the client becomes plain JavaScript that resolves a sibling package, so bundling it no longer
+  inlines a binary lookup that cannot work in a bundle.
+
+It is deliberately not done here. It is a packaging change, not a sidecar change, and it needs the
+new package names registered as trusted publishers on npm before the release workflow can publish
+them, which is manual and cannot be prepared from inside a merge request.
+
+While doing it, drop `go/` from `files`: the Go sources are published to every consumer, and nothing
+in the published package can build them.
