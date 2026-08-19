@@ -2,6 +2,7 @@ package server
 
 import (
 	"runtime"
+	"sync"
 
 	"github.com/lukaselmer/node-odbc/go/internal/odbc"
 )
@@ -17,6 +18,11 @@ type session struct {
 	closed     chan struct{}
 	statements map[string]*odbc.Statement
 	cursors    map[string]*odbc.Cursor
+
+	// Held for reading while a job is handed over, and for writing while the
+	// queue is closed, so that the two cannot overlap.
+	mutex   sync.RWMutex
+	stopped bool
 }
 
 func newSession(connection *odbc.Connection, owner *client) *session {
@@ -43,7 +49,8 @@ func (s *session) run() {
 }
 
 // submit runs a job on the session goroutine and waits for it. A session that
-// has already shut down reports it rather than blocking forever.
+// has already been stopped reports it rather than waiting for a goroutine that
+// is never going to run it.
 func (s *session) submit(job func()) bool {
 	done := make(chan struct{})
 	wrapped := func() {
@@ -51,16 +58,29 @@ func (s *session) submit(job func()) bool {
 		job()
 	}
 
-	select {
-	case s.work <- wrapped:
-		<-done
-		return true
-	case <-s.closed:
+	s.mutex.RLock()
+	if s.stopped {
+		s.mutex.RUnlock()
 		return false
 	}
+	s.work <- wrapped
+	s.mutex.RUnlock()
+
+	<-done
+	return true
 }
 
+// stop ends the session goroutine, and may be called more than once: a client
+// that disconnects and a connection that closes itself race for the same
+// session.
 func (s *session) stop() {
-	close(s.work)
+	s.mutex.Lock()
+	wasRunning := !s.stopped
+	s.stopped = true
+	if wasRunning {
+		close(s.work)
+	}
+	s.mutex.Unlock()
+
 	<-s.closed
 }
